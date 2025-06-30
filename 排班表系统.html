@@ -1,0 +1,1948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>呈尚策划公司 - 运营部智能排班系统</title>
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS Excel导出库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary-color: #8b5cf6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', 'Inter', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0.75rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+        .home-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            z-index: 1000;
+        }
+
+        .home-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            background: linear-gradient(135deg, var(--primary-dark), var(--secondary-color));
+        }
+
+        .home-button:active {
+            transform: translateY(0);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 1.25rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 i {
+            font-size: 1.75rem;
+            animation: pulse 2s infinite;
+        }
+
+        .header p {
+            font-size: 1rem;
+            opacity: 0.95;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+            margin: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .drag-area {
+            padding: 1.25rem;
+            background: var(--light-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .drag-title {
+            text-align: center;
+            font-size: 1.125rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .drag-title i {
+            color: var(--primary-color);
+        }
+
+        .drag-items {
+            display: flex;
+            justify-content: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
+        }
+
+        .drag-item {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--radius-md);
+            cursor: grab;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-md);
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            border: 2px solid transparent;
+        }
+
+        .drag-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .drag-item:hover::before {
+            left: 100%;
+        }
+
+        .drag-item.work {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .drag-item.rest {
+            background: linear-gradient(135deg, var(--warning-color), #d97706);
+            color: white;
+            border-color: var(--warning-color);
+        }
+
+        .drag-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .drag-item:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .schedule-area {
+            padding: 1.25rem;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .schedule-table th:first-child {
+            background: linear-gradient(135deg, var(--text-primary) 0%, #374151 100%);
+        }
+
+        .schedule-table td {
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            min-height: 3rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: var(--card-bg);
+        }
+
+        .schedule-table td:hover {
+            background: var(--light-bg);
+        }
+
+        .employee-name {
+            background: linear-gradient(135deg, var(--light-bg), #f1f5f9);
+            font-weight: 600;
+            color: var(--text-primary);
+            border-right: 3px solid var(--primary-color) !important;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+
+        .schedule-cell {
+            cursor: pointer;
+            min-height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: var(--radius-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .schedule-cell::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: transparent;
+            transition: background 0.3s ease;
+            pointer-events: none;
+        }
+
+        .schedule-cell:hover {
+            background-color: var(--light-bg);
+            transform: scale(1.02);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .schedule-cell.drag-over {
+            background-color: #dbeafe;
+            border: 2px dashed var(--info-color);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
+        }
+
+        .schedule-cell.work-assigned {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .schedule-cell.work-assigned::before {
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+        }
+
+        .schedule-cell.rest-assigned {
+            background: linear-gradient(135deg, var(--warning-color), #d97706);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .schedule-cell.rest-assigned::before {
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+        }
+
+        .schedule-cell.assigned {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .schedule-cell.assigned:hover::after {
+            content: '双击删除 | 右键菜单';
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+
+        .context-menu {
+            position: fixed;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            min-width: 140px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .context-menu-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .context-menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--light-bg);
+            transform: translateX(2px);
+        }
+
+        .context-menu-item.delete {
+            color: var(--danger-color);
+        }
+
+        .context-menu-item.work {
+            color: var(--success-color);
+        }
+
+        .context-menu-item.rest {
+            color: var(--warning-color);
+        }
+
+        .context-menu-item i {
+            width: 16px;
+            text-align: center;
+        }
+
+        .auto-schedule-area {
+            padding: 1.25rem;
+            background: var(--light-bg);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .auto-schedule-title {
+            text-align: center;
+            font-size: 1.125rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .auto-schedule-title i {
+            color: var(--primary-color);
+        }
+
+        .schedule-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .day-selector {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .day-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .day-checkbox::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .day-checkbox:hover::before {
+            left: 100%;
+        }
+
+        .day-checkbox:hover {
+            border-color: var(--primary-color);
+            background: #f8faff;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .day-checkbox.selected {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .day-checkbox input[type="checkbox"] {
+            display: none;
+        }
+
+        .random-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .random-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .random-btn:hover::before {
+            left: 100%;
+        }
+
+        .random-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .random-btn:active {
+            transform: translateY(0);
+        }
+
+        .random-btn:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .group-info {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 0.75rem;
+        }
+
+        .group-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 160px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .group-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .group-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .group-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            text-align: center;
+            font-size: 0.9375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+        }
+
+        .group-members {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* 底部操作区域样式 */
+        .bottom-actions {
+            padding: 1.25rem;
+            background: var(--light-bg);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .action-btn:hover::before {
+            left: 100%;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, var(--info-color), #2563eb);
+            color: white;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+        }
+
+        .action-btn i {
+            font-size: 1.125rem;
+        }
+
+        /* 星期六大扫除安排区域样式 */
+        .cleaning-area {
+            padding: 1.25rem;
+            background: var(--light-bg);
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            display: none; /* 默认隐藏，只有星期六有人上班时才显示 */
+        }
+
+        .cleaning-title {
+            text-align: center;
+            font-size: 1.125rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .cleaning-title i {
+            color: var(--info-color);
+        }
+
+        .cleaning-cards {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .cleaning-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            min-width: 160px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .cleaning-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--info-color), var(--primary-color));
+        }
+
+        .cleaning-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .cleaning-employee {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+        }
+
+        .cleaning-employee i {
+            color: var(--primary-color);
+            font-size: 0.875rem;
+        }
+
+        .cleaning-task {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            gap: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--light-bg);
+            border-radius: var(--radius-sm);
+            margin-top: 0.5rem;
+        }
+
+        .task-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .task-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .task-description {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+            opacity: 0.8;
+        }
+
+        .cleaning-task i {
+            color: var(--success-color);
+        }
+
+        .cleaning-task.sweep i {
+            color: #8b5a2b; /* 棕色 - 扫地 */
+        }
+
+        .cleaning-task.mop i {
+            color: var(--info-color); /* 蓝色 - 拖地 */
+        }
+
+        .cleaning-task.wipe i {
+            color: var(--warning-color); /* 橙色 - 擦桌子 */
+        }
+
+        .cleaning-summary {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .cleaning-summary-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+
+            .container {
+                margin: 0;
+                border-radius: var(--radius-md);
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .header p {
+                font-size: 0.875rem;
+            }
+
+            .drag-area {
+                padding: 1rem;
+            }
+
+            .drag-items {
+                gap: 0.75rem;
+            }
+
+            .drag-item {
+                padding: 0.625rem 1.25rem;
+                font-size: 0.8125rem;
+            }
+
+            .auto-schedule-area {
+                padding: 1rem;
+            }
+
+            .schedule-controls {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .day-selector {
+                justify-content: center;
+                gap: 0.375rem;
+            }
+
+            .day-checkbox {
+                padding: 0.375rem 0.625rem;
+                font-size: 0.75rem;
+            }
+
+            .group-info {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .group-card {
+                min-width: auto;
+                padding: 0.75rem;
+            }
+
+            .schedule-area {
+                padding: 1rem;
+                overflow-x: auto;
+            }
+            
+            .schedule-table {
+                min-width: 600px;
+            }
+
+            .schedule-table th,
+            .schedule-table td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.75rem;
+            }
+
+            .schedule-cell {
+                min-height: 2.5rem;
+                font-size: 0.75rem;
+            }
+
+            .bottom-actions {
+                padding: 1rem;
+            }
+
+            .action-buttons {
+                gap: 0.75rem;
+            }
+
+            .action-btn {
+                padding: 0.625rem 1.25rem;
+                font-size: 0.8125rem;
+                min-width: 120px;
+            }
+
+            .cleaning-area {
+                padding: 1rem;
+            }
+
+            .cleaning-cards {
+                gap: 0.75rem;
+            }
+
+            .cleaning-card {
+                min-width: auto;
+                padding: 0.75rem;
+                flex: 1;
+                max-width: 140px;
+            }
+
+            .cleaning-employee {
+                font-size: 0.875rem;
+            }
+
+            .cleaning-task {
+                font-size: 0.75rem;
+                padding: 0.375rem 0.5rem;
+            }
+
+            .task-name {
+                font-size: 0.75rem;
+            }
+
+            .task-description {
+                font-size: 0.6875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 返回首页按钮 -->
+        <a href="index.html" class="home-button">
+            <i class="fas fa-home"></i>
+            返回首页
+        </a>
+
+        <!-- 头部标题 -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-calendar-alt"></i>
+                呈尚策划公司 - 运营部智能排班系统
+            </h1>
+            <p>运营部可拖拽排班表系统</p>
+        </div>
+
+        <!-- 拖拽标签区域 -->
+        <div class="drag-area">
+            <div class="drag-title">
+                <i class="fas fa-hand-paper"></i>
+                拖拽下方标签到排班表中安排工作
+            </div>
+            <div class="drag-items">
+                <div class="drag-item work" draggable="true" data-type="work">
+                    <i class="fas fa-briefcase"></i>
+                    上班
+                </div>
+                <div class="drag-item rest" draggable="true" data-type="rest">
+                    <i class="fas fa-bed"></i>
+                    休息
+                </div>
+            </div>
+        </div>
+
+        <!-- 自动排班区域 -->
+        <div class="auto-schedule-area">
+            <div class="auto-schedule-title">
+                <i class="fas fa-magic"></i>
+                智能随机排班
+            </div>
+
+            <div class="schedule-controls">
+                <div class="day-selector">
+                    <label class="day-checkbox">
+                        <input type="checkbox" value="0" data-day="星期一">
+                        <span>星期一</span>
+                    </label>
+                    <label class="day-checkbox">
+                        <input type="checkbox" value="1" data-day="星期二">
+                        <span>星期二</span>
+                    </label>
+                    <label class="day-checkbox">
+                        <input type="checkbox" value="2" data-day="星期三">
+                        <span>星期三</span>
+                    </label>
+                    <label class="day-checkbox">
+                        <input type="checkbox" value="3" data-day="星期四">
+                        <span>星期四</span>
+                    </label>
+                    <label class="day-checkbox">
+                        <input type="checkbox" value="4" data-day="星期五">
+                        <span>星期五</span>
+                    </label>
+                    <label class="day-checkbox selected">
+                        <input type="checkbox" value="5" data-day="星期六" checked>
+                        <span>星期六</span>
+                    </label>
+                    <label class="day-checkbox selected">
+                        <input type="checkbox" value="6" data-day="星期天" checked>
+                        <span>星期天</span>
+                    </label>
+                </div>
+
+                <button class="random-btn" onclick="generateRandomSchedule()">
+                    <i class="fas fa-dice"></i>
+                    生成随机排班
+                </button>
+            </div>
+
+            <div class="group-info">
+                <div class="group-card">
+                    <div class="group-title">
+                        <i class="fas fa-users"></i>
+                        运营组
+                    </div>
+                    <div class="group-members">王郡江、杨有淇、张玉莲</div>
+                </div>
+                <div class="group-card">
+                    <div class="group-title">
+                        <i class="fas fa-palette"></i>
+                        美工组
+                    </div>
+                    <div class="group-members">王涛、单龙龙、曾衡</div>
+                </div>
+                <div class="group-card">
+                    <div class="group-title">
+                        <i class="fas fa-clipboard-list"></i>
+                        排班规则
+                    </div>
+                    <div class="group-members">
+                        星期天：1运营+1美工<br>
+                        2天排班：每人工作1天休息1天<br>
+                        互补原则：星期天上班→另一天休息<br>
+                        其他：随机安排
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 排班表区域 -->
+        <div class="schedule-area">
+            <table class="schedule-table">
+                <thead>
+                    <tr>
+                        <th>员工姓名</th>
+                        <th>星期一</th>
+                        <th>星期二</th>
+                        <th>星期三</th>
+                        <th>星期四</th>
+                        <th>星期五</th>
+                        <th>星期六</th>
+                        <th>星期天</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody">
+                    <!-- 员工排班行将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 星期六大扫除安排区域 -->
+        <div class="cleaning-area" id="cleaningArea">
+            <div class="cleaning-title">
+                <i class="fas fa-broom"></i>
+                星期六大扫除任务分配
+            </div>
+            <div class="cleaning-cards" id="cleaningCards">
+                <!-- 大扫除任务卡片将通过JavaScript动态生成 -->
+            </div>
+            <div class="cleaning-summary">
+                <p class="cleaning-summary-text" id="cleaningSummary">
+                    <!-- 汇总信息将通过JavaScript动态生成 -->
+                </p>
+            </div>
+        </div>
+
+        <!-- 底部操作区域 -->
+        <div class="bottom-actions">
+            <div class="action-buttons">
+                <button class="action-btn clear-btn" onclick="clearSchedule()">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>清空排班表</span>
+                </button>
+                <button class="action-btn export-btn" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel"></i>
+                    <span>导出Excel</span>
+                </button>
+                <button class="action-btn save-btn" onclick="saveSchedule()">
+                    <i class="fas fa-save"></i>
+                    <span>保存排班</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item work" data-action="work">
+            <i class="fas fa-briefcase"></i>
+            设为上班
+        </div>
+        <div class="context-menu-item rest" data-action="rest">
+            <i class="fas fa-bed"></i>
+            设为休息
+        </div>
+        <div class="context-menu-item delete" data-action="delete">
+            <i class="fas fa-trash-alt"></i>
+            清空
+        </div>
+    </div>
+
+    <script>
+        // 员工名单和分组
+        const employees = ['王郡江', '杨有淇', '张玉莲', '王涛', '单龙龙', '曾衡'];
+        const operationGroup = ['王郡江', '杨有淇', '张玉莲']; // 运营组
+        const designGroup = ['王涛', '单龙龙', '曾衡']; // 美工组
+        const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'];
+
+        // 大扫除任务列表
+        const cleaningTasks = [
+            {
+                name: '扫地',
+                description: '（每个地方都要打扫干净）',
+                icon: 'fas fa-broom',
+                class: 'sweep',
+                maxCount: 1
+            },
+            {
+                name: '拖地',
+                description: '（地面要拖得干净无水渍）',
+                icon: 'fas fa-water',
+                class: 'mop',
+                maxCount: 2
+            },
+            {
+                name: '擦桌子',
+                description: '（桌面要擦拭光亮无灰尘）',
+                icon: 'fas fa-hand-sparkles',
+                class: 'wipe',
+                maxCount: 1
+            }
+        ];
+        
+        // 初始化排班表
+        function initScheduleTable() {
+            const tbody = document.getElementById('scheduleBody');
+            
+            employees.forEach(employee => {
+                const row = document.createElement('tr');
+                
+                // 员工姓名列
+                const nameCell = document.createElement('td');
+                nameCell.className = 'employee-name';
+                nameCell.textContent = employee;
+                row.appendChild(nameCell);
+                
+                // 一周7天的排班单元格
+                for (let day = 0; day < 7; day++) {
+                    const cell = document.createElement('td');
+                    const scheduleCell = document.createElement('div');
+                    scheduleCell.className = 'schedule-cell';
+                    scheduleCell.textContent = '点击或拖拽安排';
+                    
+                    // 添加拖拽事件监听器
+                    scheduleCell.addEventListener('dragover', handleDragOver);
+                    scheduleCell.addEventListener('drop', handleDrop);
+                    scheduleCell.addEventListener('dragleave', handleDragLeave);
+
+                    // 添加双击删除功能
+                    scheduleCell.addEventListener('dblclick', handleDoubleClick);
+
+                    // 添加右键菜单功能
+                    scheduleCell.addEventListener('contextmenu', handleRightClick);
+                    
+                    cell.appendChild(scheduleCell);
+                    row.appendChild(cell);
+                }
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        // 初始化拖拽功能
+        function initDragAndDrop() {
+            const dragItems = document.querySelectorAll('.drag-item');
+
+            dragItems.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+            });
+        }
+
+        // 初始化天数选择器
+        function initDaySelector() {
+            const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+
+            dayCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('click', function() {
+                    const input = this.querySelector('input[type="checkbox"]');
+                    input.checked = !input.checked;
+
+                    if (input.checked) {
+                        this.classList.add('selected');
+                    } else {
+                        this.classList.remove('selected');
+                    }
+
+                    // 更新按钮状态
+                    updateRandomButtonState();
+                });
+            });
+        }
+
+        // 更新随机排班按钮状态
+        function updateRandomButtonState() {
+            const selectedDays = document.querySelectorAll('.day-checkbox input:checked');
+            const randomBtn = document.querySelector('.random-btn');
+
+            if (selectedDays.length === 0) {
+                randomBtn.disabled = true;
+                randomBtn.textContent = '请先选择排班天数';
+            } else {
+                randomBtn.disabled = false;
+                randomBtn.textContent = `🎯 生成随机排班 (${selectedDays.length}天)`;
+            }
+        }
+        
+        // 拖拽开始事件
+        function handleDragStart(e) {
+            const type = e.target.getAttribute('data-type');
+            e.dataTransfer.setData('text/plain', type);
+            e.target.style.opacity = '0.5';
+            
+            // 添加拖拽效果
+            setTimeout(() => {
+                e.target.style.opacity = '1';
+            }, 100);
+        }
+        
+        // 拖拽悬停事件
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+        
+        // 拖拽离开事件
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+        
+        // 拖拽放置事件
+        function handleDrop(e) {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('text/plain');
+            const cell = e.currentTarget;
+
+            // 移除拖拽悬停效果
+            cell.classList.remove('drag-over');
+
+            // 设置排班状态
+            setScheduleStatus(cell, type);
+        }
+
+        // 设置排班状态的通用函数
+        function setScheduleStatus(cell, type) {
+            // 清除之前的状态
+            cell.classList.remove('work-assigned', 'rest-assigned', 'assigned');
+
+            // 根据类型设置新状态
+            if (type === 'work') {
+                cell.classList.add('work-assigned', 'assigned');
+                cell.innerHTML = '<i class="fas fa-briefcase"></i> 上班';
+            } else if (type === 'rest') {
+                cell.classList.add('rest-assigned', 'assigned');
+                cell.innerHTML = '<i class="fas fa-bed"></i> 休息';
+            } else if (type === 'clear') {
+                cell.textContent = '点击或拖拽安排';
+            }
+
+            // 添加成功动画效果
+            cell.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                cell.style.transform = 'scale(1)';
+
+                // 检查是否需要更新大扫除安排
+                updateCleaningArrangement();
+            }, 200);
+        }
+
+        // 双击删除功能
+        function handleDoubleClick(e) {
+            const cell = e.currentTarget;
+            if (cell.classList.contains('assigned')) {
+                setScheduleStatus(cell, 'clear');
+
+                // 添加删除动画效果
+                cell.style.background = '#ffebee';
+                setTimeout(() => {
+                    cell.style.background = '';
+                }, 300);
+            }
+        }
+
+        // 右键菜单功能
+        function handleRightClick(e) {
+            e.preventDefault();
+            const contextMenu = document.getElementById('contextMenu');
+            const cell = e.currentTarget;
+
+            // 设置菜单位置
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+            contextMenu.style.display = 'block';
+
+            // 存储当前单元格引用
+            contextMenu.currentCell = cell;
+
+            // 点击其他地方隐藏菜单
+            setTimeout(() => {
+                document.addEventListener('click', hideContextMenu);
+            }, 10);
+        }
+
+        // 隐藏右键菜单
+        function hideContextMenu() {
+            const contextMenu = document.getElementById('contextMenu');
+            contextMenu.style.display = 'none';
+            document.removeEventListener('click', hideContextMenu);
+        }
+        
+        // 初始化右键菜单事件
+        function initContextMenu() {
+            const contextMenu = document.getElementById('contextMenu');
+            const menuItems = contextMenu.querySelectorAll('.context-menu-item');
+
+            menuItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const action = this.getAttribute('data-action');
+                    const cell = contextMenu.currentCell;
+
+                    if (cell) {
+                        if (action === 'delete') {
+                            setScheduleStatus(cell, 'clear');
+                        } else {
+                            setScheduleStatus(cell, action);
+                        }
+                    }
+
+                    hideContextMenu();
+                });
+            });
+        }
+
+        // 随机排班生成函数
+        function generateRandomSchedule() {
+            const selectedDays = document.querySelectorAll('.day-checkbox input:checked');
+
+            if (selectedDays.length === 0) {
+                alert('请先选择要排班的天数！');
+                return;
+            }
+
+            // 获取所有排班单元格
+            const scheduleRows = document.querySelectorAll('#scheduleBody tr');
+            const selectedDaysList = Array.from(selectedDays).map(input => ({
+                index: parseInt(input.value),
+                name: input.getAttribute('data-day')
+            }));
+
+            // 清空选中天数的所有排班
+            selectedDaysList.forEach(day => {
+                scheduleRows.forEach(row => {
+                    const cell = row.children[day.index + 1];
+                    if (cell) {
+                        const scheduleCell = cell.querySelector('.schedule-cell');
+                        setScheduleStatus(scheduleCell, 'clear');
+                    }
+                });
+            });
+
+            // 如果选择2天，使用特殊的人员配置算法
+            if (selectedDaysList.length === 2) {
+                generateTwoDaySchedule(selectedDaysList, scheduleRows);
+            } else {
+                // 单天或多天（非2天）使用原有逻辑
+                generateRegularSchedule(selectedDaysList, scheduleRows);
+            }
+
+            // 显示成功提示
+            showSuccessMessage();
+
+            // 更新大扫除安排
+            setTimeout(() => {
+                updateCleaningArrangement();
+            }, 100);
+        }
+
+        // 2天排班的特殊算法 - 严格互补排班逻辑
+        function generateTwoDaySchedule(selectedDays, scheduleRows) {
+            console.log('=== 开始2天互补排班算法 ===');
+            console.log(`选择的天数: ${selectedDays.map(d => d.name).join(', ')}`);
+
+            // 检查是否包含星期天
+            const sundayDay = selectedDays.find(day => day.name === '星期天');
+            const otherDay = selectedDays.find(day => day.name !== '星期天');
+
+            if (!sundayDay) {
+                // 如果没有星期天，使用常规算法
+                console.log('没有星期天，使用常规2天排班');
+                generateRegularTwoDaySchedule(selectedDays, scheduleRows);
+                return;
+            }
+
+            console.log(`星期天: ${sundayDay.name}, 另一天: ${otherDay.name}`);
+
+            // 第一步：处理星期天 - 1个运营 + 1个美工
+            const sundayOperation = operationGroup[Math.floor(Math.random() * operationGroup.length)];
+            const sundayDesign = designGroup[Math.floor(Math.random() * designGroup.length)];
+
+            console.log(`星期天上班人员: ${sundayOperation}(运营), ${sundayDesign}(美工)`);
+
+            // 第二步：确定星期天休息的人员
+            const sundayRestEmployees = employees.filter(emp =>
+                emp !== sundayOperation && emp !== sundayDesign
+            );
+
+            console.log(`星期天休息人员: ${sundayRestEmployees.join(', ')}`);
+
+            // 第三步：应用互补原则
+            // 星期天上班的人，另一天休息
+            // 星期天休息的人，另一天上班
+            const otherDayWorkers = sundayRestEmployees;
+            const otherDayRestEmployees = [sundayOperation, sundayDesign];
+
+            console.log(`${otherDay.name}上班人员: ${otherDayWorkers.join(', ')}`);
+            console.log(`${otherDay.name}休息人员: ${otherDayRestEmployees.join(', ')}`);
+
+            // 第四步：应用排班到界面
+            scheduleRows.forEach(row => {
+                const employeeName = row.children[0].textContent;
+
+                // 处理星期天
+                const sundayCell = row.children[sundayDay.index + 1];
+                if (sundayCell) {
+                    const sundayScheduleCell = sundayCell.querySelector('.schedule-cell');
+                    if (employeeName === sundayOperation || employeeName === sundayDesign) {
+                        setScheduleStatus(sundayScheduleCell, 'work');
+                    } else {
+                        setScheduleStatus(sundayScheduleCell, 'rest');
+                    }
+                }
+
+                // 处理另一天
+                const otherDayCell = row.children[otherDay.index + 1];
+                if (otherDayCell) {
+                    const otherDayScheduleCell = otherDayCell.querySelector('.schedule-cell');
+                    if (otherDayWorkers.includes(employeeName)) {
+                        setScheduleStatus(otherDayScheduleCell, 'work');
+                    } else {
+                        setScheduleStatus(otherDayScheduleCell, 'rest');
+                    }
+                }
+            });
+
+            // 第五步：验证排班结果
+            console.log('=== 排班验证 ===');
+            let isValid = true;
+
+            employees.forEach(emp => {
+                let workDays = 0;
+                let restDays = 0;
+
+                selectedDays.forEach(day => {
+                    scheduleRows.forEach(row => {
+                        if (row.children[0].textContent === emp) {
+                            const cell = row.children[day.index + 1];
+                            if (cell) {
+                                const scheduleCell = cell.querySelector('.schedule-cell');
+                                if (scheduleCell.classList.contains('work-assigned')) {
+                                    workDays++;
+                                } else if (scheduleCell.classList.contains('rest-assigned')) {
+                                    restDays++;
+                                }
+                            }
+                        }
+                    });
+                });
+
+                console.log(`${emp}: 工作${workDays}天, 休息${restDays}天`);
+
+                if (workDays !== 1 || restDays !== 1) {
+                    console.error(`❌ ${emp} 排班不符合规则！应该工作1天休息1天`);
+                    isValid = false;
+                }
+            });
+
+            // 验证星期天人数
+            let sundayWorkCount = 0;
+            scheduleRows.forEach(row => {
+                const cell = row.children[sundayDay.index + 1];
+                if (cell && cell.querySelector('.schedule-cell').classList.contains('work-assigned')) {
+                    sundayWorkCount++;
+                }
+            });
+
+            console.log(`星期天上班人数: ${sundayWorkCount}`);
+            if (sundayWorkCount !== 2) {
+                console.error(`❌ 星期天上班人数错误！应该是2人，实际是${sundayWorkCount}人`);
+                isValid = false;
+            }
+
+            if (isValid) {
+                console.log('✅ 排班验证通过！');
+            } else {
+                console.error('❌ 排班验证失败！');
+            }
+
+            console.log('=== 2天互补排班算法完成 ===');
+        }
+
+        // 常规2天排班算法（不包含星期天）
+        function generateRegularTwoDaySchedule(selectedDays, scheduleRows) {
+            console.log('执行常规2天排班算法');
+
+            // 为每个人随机分配1天工作，1天休息
+            employees.forEach(emp => {
+                const workDayIndex = Math.floor(Math.random() * 2); // 0或1
+
+                selectedDays.forEach((day, dayIdx) => {
+                    scheduleRows.forEach(row => {
+                        if (row.children[0].textContent === emp) {
+                            const cell = row.children[day.index + 1];
+                            if (cell) {
+                                const scheduleCell = cell.querySelector('.schedule-cell');
+                                if (dayIdx === workDayIndex) {
+                                    setScheduleStatus(scheduleCell, 'work');
+                                } else {
+                                    setScheduleStatus(scheduleCell, 'rest');
+                                }
+                            }
+                        }
+                    });
+                });
+            });
+        }
+
+
+        // 常规排班算法（非2天）
+        function generateRegularSchedule(selectedDays, scheduleRows) {
+            selectedDays.forEach(day => {
+                if (day.name === '星期天') {
+                    // 星期天特殊规则：1个运营 + 1个美工
+                    const randomOperation = operationGroup[Math.floor(Math.random() * operationGroup.length)];
+                    const randomDesign = designGroup[Math.floor(Math.random() * designGroup.length)];
+
+                    scheduleRows.forEach(row => {
+                        const employeeName = row.children[0].textContent;
+                        const cell = row.children[day.index + 1];
+
+                        if (cell) {
+                            const scheduleCell = cell.querySelector('.schedule-cell');
+
+                            if (employeeName === randomOperation || employeeName === randomDesign) {
+                                setScheduleStatus(scheduleCell, 'work');
+                            } else {
+                                setScheduleStatus(scheduleCell, 'rest');
+                            }
+                        }
+                    });
+                } else {
+                    // 其他天数：随机安排
+                    const workCount = Math.floor(Math.random() * 4) + 2; // 2-5个人上班
+                    const shuffledEmployees = [...employees].sort(() => Math.random() - 0.5);
+                    const workingEmployees = shuffledEmployees.slice(0, workCount);
+
+                    scheduleRows.forEach(row => {
+                        const employeeName = row.children[0].textContent;
+                        const cell = row.children[day.index + 1];
+
+                        if (cell) {
+                            const scheduleCell = cell.querySelector('.schedule-cell');
+
+                            if (workingEmployees.includes(employeeName)) {
+                                setScheduleStatus(scheduleCell, 'work');
+                            } else {
+                                setScheduleStatus(scheduleCell, 'rest');
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // 显示成功消息
+        function showSuccessMessage() {
+            const randomBtn = document.querySelector('.random-btn');
+            const originalText = randomBtn.innerHTML;
+            randomBtn.innerHTML = '<i class="fas fa-check"></i> 排班生成完成！';
+            randomBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+
+            setTimeout(() => {
+                randomBtn.innerHTML = originalText;
+                randomBtn.style.background = '';
+            }, 2000);
+        }
+
+        // 清空排班表
+        function clearSchedule() {
+            if (confirm('确定要清空所有排班安排吗？此操作不可撤销。')) {
+                const scheduleCells = document.querySelectorAll('.schedule-cell');
+                scheduleCells.forEach(cell => {
+                    setScheduleStatus(cell, 'clear');
+                });
+
+                // 隐藏大扫除区域
+                const cleaningArea = document.getElementById('cleaningArea');
+                cleaningArea.style.display = 'none';
+
+                // 显示成功提示
+                showActionMessage('clear-btn', '<i class="fas fa-check"></i> 排班表已清空', '#ef4444');
+            }
+        }
+
+        // 导出Excel
+        function exportToExcel() {
+            try {
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+
+                // 获取排班数据
+                const scheduleData = [];
+                const headerRow = ['员工姓名', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'];
+                scheduleData.push(headerRow);
+
+                const scheduleRows = document.querySelectorAll('#scheduleBody tr');
+                scheduleRows.forEach(row => {
+                    const rowData = [];
+                    const cells = row.querySelectorAll('td');
+
+                    cells.forEach((cell, index) => {
+                        if (index === 0) {
+                            // 员工姓名
+                            rowData.push(cell.textContent);
+                        } else {
+                            // 排班状态
+                            const scheduleCell = cell.querySelector('.schedule-cell');
+                            if (scheduleCell.classList.contains('work-assigned')) {
+                                rowData.push('上班');
+                            } else if (scheduleCell.classList.contains('rest-assigned')) {
+                                rowData.push('休息');
+                            } else {
+                                rowData.push('');
+                            }
+                        }
+                    });
+
+                    scheduleData.push(rowData);
+                });
+
+                // 创建工作表
+                const ws = XLSX.utils.aoa_to_sheet(scheduleData);
+
+                // 设置列宽
+                ws['!cols'] = [
+                    { width: 12 }, // 员工姓名
+                    { width: 10 }, // 星期一
+                    { width: 10 }, // 星期二
+                    { width: 10 }, // 星期三
+                    { width: 10 }, // 星期四
+                    { width: 10 }, // 星期五
+                    { width: 10 }, // 星期六
+                    { width: 10 }  // 星期天
+                ];
+
+                // 添加工作表到工作簿
+                XLSX.utils.book_append_sheet(wb, ws, '排班表');
+
+                // 生成文件名
+                const now = new Date();
+                const fileName = `排班表_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.xlsx`;
+
+                // 导出文件
+                XLSX.writeFile(wb, fileName);
+
+                // 显示成功提示
+                showActionMessage('export-btn', '<i class="fas fa-check"></i> 导出成功', '#3b82f6');
+
+            } catch (error) {
+                console.error('导出失败:', error);
+                alert('导出失败，请检查是否已加载Excel导出库。');
+            }
+        }
+
+        // 保存排班
+        function saveSchedule() {
+            try {
+                const scheduleData = {};
+                const scheduleRows = document.querySelectorAll('#scheduleBody tr');
+
+                scheduleRows.forEach(row => {
+                    const employeeName = row.querySelector('.employee-name').textContent;
+                    const weekSchedule = {};
+
+                    const cells = row.querySelectorAll('td');
+                    cells.forEach((cell, index) => {
+                        if (index > 0) { // 跳过员工姓名列
+                            const dayName = dayNames[index - 1];
+                            const scheduleCell = cell.querySelector('.schedule-cell');
+
+                            if (scheduleCell.classList.contains('work-assigned')) {
+                                weekSchedule[dayName] = '上班';
+                            } else if (scheduleCell.classList.contains('rest-assigned')) {
+                                weekSchedule[dayName] = '休息';
+                            } else {
+                                weekSchedule[dayName] = '';
+                            }
+                        }
+                    });
+
+                    scheduleData[employeeName] = weekSchedule;
+                });
+
+                // 保存到本地存储
+                const saveKey = `schedule_${new Date().getTime()}`;
+                localStorage.setItem(saveKey, JSON.stringify(scheduleData));
+                localStorage.setItem('latest_schedule', saveKey);
+
+                // 显示成功提示
+                showActionMessage('save-btn', '<i class="fas fa-check"></i> 保存成功', '#10b981');
+
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('保存失败，请检查浏览器是否支持本地存储。');
+            }
+        }
+
+        // 显示操作消息
+        function showActionMessage(buttonClass, message, color) {
+            const button = document.querySelector(`.${buttonClass}`);
+            const originalContent = button.innerHTML;
+            const originalBackground = button.style.background;
+
+            button.innerHTML = message;
+            button.style.background = `linear-gradient(135deg, ${color}, ${color}dd)`;
+
+            setTimeout(() => {
+                button.innerHTML = originalContent;
+                button.style.background = originalBackground;
+            }, 2000);
+        }
+
+        // 获取星期六上班人员
+        function getSaturdayWorkers() {
+            const saturdayWorkers = [];
+            const scheduleRows = document.querySelectorAll('#scheduleBody tr');
+            const saturdayColumnIndex = 6; // 星期六是第6列（从0开始计数）
+
+            scheduleRows.forEach(row => {
+                const employeeName = row.querySelector('.employee-name').textContent;
+                const saturdayCell = row.children[saturdayColumnIndex];
+
+                if (saturdayCell) {
+                    const scheduleCell = saturdayCell.querySelector('.schedule-cell');
+                    if (scheduleCell && scheduleCell.classList.contains('work-assigned')) {
+                        saturdayWorkers.push(employeeName);
+                    }
+                }
+            });
+
+            return saturdayWorkers;
+        }
+
+        // 按固定规则分配大扫除任务
+        function assignCleaningTasks(workers) {
+            const assignments = [];
+            const workersCopy = [...workers]; // 复制数组避免修改原数组
+
+            // 打乱员工顺序以确保随机性
+            for (let i = workersCopy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [workersCopy[i], workersCopy[j]] = [workersCopy[j], workersCopy[i]];
+            }
+
+            // 按固定规则分配任务：2人拖地，1人扫地，1人擦桌子
+            const taskQueue = [];
+
+            // 根据人数创建任务队列
+            if (workersCopy.length >= 4) {
+                // 4人或以上：2人拖地，1人扫地，1人擦桌子，剩余人员继续拖地
+                taskQueue.push(cleaningTasks[1]); // 拖地
+                taskQueue.push(cleaningTasks[1]); // 拖地
+                taskQueue.push(cleaningTasks[0]); // 扫地
+                taskQueue.push(cleaningTasks[2]); // 擦桌子
+
+                // 剩余人员分配拖地
+                for (let i = 4; i < workersCopy.length; i++) {
+                    taskQueue.push(cleaningTasks[1]); // 拖地
+                }
+            } else if (workersCopy.length === 3) {
+                // 3人：1人拖地，1人扫地，1人擦桌子
+                taskQueue.push(cleaningTasks[1]); // 拖地
+                taskQueue.push(cleaningTasks[0]); // 扫地
+                taskQueue.push(cleaningTasks[2]); // 擦桌子
+            } else if (workersCopy.length === 2) {
+                // 2人：1人拖地，1人扫地
+                taskQueue.push(cleaningTasks[1]); // 拖地
+                taskQueue.push(cleaningTasks[0]); // 扫地
+            } else if (workersCopy.length === 1) {
+                // 1人：拖地
+                taskQueue.push(cleaningTasks[1]); // 拖地
+            }
+
+            // 分配任务给员工
+            workersCopy.forEach((worker, index) => {
+                assignments.push({
+                    employee: worker,
+                    task: taskQueue[index]
+                });
+            });
+
+            return assignments;
+        }
+
+        // 更新大扫除安排显示
+        function updateCleaningArrangement() {
+            const cleaningArea = document.getElementById('cleaningArea');
+            const cleaningCards = document.getElementById('cleaningCards');
+            const cleaningSummary = document.getElementById('cleaningSummary');
+
+            // 获取星期六上班人员
+            const saturdayWorkers = getSaturdayWorkers();
+
+            if (saturdayWorkers.length === 0) {
+                // 没有人星期六上班，隐藏大扫除区域
+                cleaningArea.style.display = 'none';
+                return;
+            }
+
+            // 有人星期六上班，显示大扫除区域
+            cleaningArea.style.display = 'block';
+
+            // 分配任务
+            const assignments = assignCleaningTasks(saturdayWorkers);
+
+            // 清空现有内容
+            cleaningCards.innerHTML = '';
+
+            // 生成任务卡片
+            assignments.forEach(assignment => {
+                const card = document.createElement('div');
+                card.className = 'cleaning-card';
+
+                card.innerHTML = `
+                    <div class="cleaning-employee">
+                        <i class="fas fa-user"></i>
+                        ${assignment.employee}
+                    </div>
+                    <div class="cleaning-task ${assignment.task.class}">
+                        <i class="${assignment.task.icon}"></i>
+                        <div class="task-content">
+                            <div class="task-name">${assignment.task.name}</div>
+                            <div class="task-description">${assignment.task.description}</div>
+                        </div>
+                    </div>
+                `;
+
+                cleaningCards.appendChild(card);
+            });
+
+            // 更新汇总信息
+            const taskCounts = {};
+            assignments.forEach(assignment => {
+                const taskName = assignment.task.name;
+                taskCounts[taskName] = (taskCounts[taskName] || 0) + 1;
+            });
+
+            const summaryParts = [];
+            // 按照优先级顺序显示：拖地、扫地、擦桌子
+            const taskOrder = ['拖地', '扫地', '擦桌子'];
+            taskOrder.forEach(taskName => {
+                if (taskCounts[taskName]) {
+                    summaryParts.push(`${taskName}：${taskCounts[taskName]}人`);
+                }
+            });
+
+            cleaningSummary.innerHTML = `
+                <i class="fas fa-info-circle" style="color: var(--info-color); margin-right: 0.5rem;"></i>
+                共${saturdayWorkers.length}人参与大扫除，任务分配：${summaryParts.join('，')}
+            `;
+
+            console.log('🧹 星期六大扫除任务分配完成：');
+            assignments.forEach(assignment => {
+                console.log(`   ${assignment.employee} → ${assignment.task.name}${assignment.task.description}`);
+            });
+
+            // 显示分配规则
+            console.log('📋 分配规则：2人拖地，1人扫地，1人擦桌子（人数不足时优先拖地）');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initScheduleTable();
+            initDragAndDrop();
+            initContextMenu();
+            initDaySelector();
+            updateRandomButtonState();
+
+            // 添加一些提示信息
+            console.log('🎉 智能排班系统已加载完成！');
+            console.log('📝 使用说明：');
+            console.log('   - 拖拽标签到表格中进行排班安排');
+            console.log('   - 双击已安排的单元格可以清空');
+            console.log('   - 右键点击单元格可以打开菜单');
+            console.log('   - 选择天数后点击智能排班按钮自动生成');
+            console.log('   - 使用底部按钮进行清空、导出、保存操作');
+            console.log('💡 新功能：2天互补排班算法，确保工作负荷平衡！');
+            console.log('🧹 大扫除功能：星期六有人上班时自动显示大扫除任务分配！');
+        });
+        
+        // 添加键盘快捷键支持（可选功能）
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'z') {
+                // 可以在这里添加撤销功能
+                console.log('撤销功能（待实现）');
+            }
+        });
+    </script>
+</body>
+</html>
