@@ -708,7 +708,8 @@
                 '擦洗微波炉转盘+擦饭桌+清洗洗手池+整理台面'
             ],
             '其他': [
-                '绿植浇水+换垃圾袋'
+                '绿植浇水+换垃圾袋',
+                '前台区域大扫除'
             ]
         };
 
@@ -717,6 +718,33 @@
             initDragItems();
             initCleaningTable();
             initDragAndDrop();
+            // 固定分配：吴思湘 → 前台区域大扫除
+            setFixedAssignment();
+        }
+
+        // 设置固定分配
+        function setFixedAssignment() {
+            // 找到"前台区域大扫除"任务的单元格
+            const cells = document.querySelectorAll('.cleaning-cell');
+            cells.forEach(cell => {
+                const task = cell.getAttribute('data-task');
+                if (task === '前台区域大扫除') {
+                    // 固定分配吴思湘到前台区域大扫除
+                    setAssignment(cell, '吴思湘');
+                    // 从拖拽区域移除吴思湘
+                    removeEmployeeFromDragArea('吴思湘');
+                }
+            });
+        }
+
+        // 从拖拽区域移除指定员工
+        function removeEmployeeFromDragArea(employeeName) {
+            const dragItems = document.querySelectorAll('.drag-item');
+            dragItems.forEach(item => {
+                if (item.textContent.trim() === employeeName) {
+                    item.style.display = 'none';
+                }
+            });
         }
 
         // 初始化拖拽人员标签
@@ -893,28 +921,46 @@
         // 随机分配任务
         function randomAssignTasks() {
             const cells = document.querySelectorAll('.cleaning-cell[data-task]');
-            const shuffledEmployees = [...salesEmployees].sort(() => Math.random() - 0.5);
+            // 排除固定分配的员工（吴思湘）
+            const availableEmployees = salesEmployees.filter(emp => emp !== '吴思湘');
+            const shuffledEmployees = [...availableEmployees].sort(() => Math.random() - 0.5);
 
-            // 清空所有分配
-            cells.forEach(cell => setAssignment(cell, null));
-
-            // 确保每个任务都有人分配
-            let employeeIndex = 0;
+            // 清空所有分配（除了固定分配）
             cells.forEach(cell => {
+                const task = cell.getAttribute('data-task');
+                if (task !== '前台区域大扫除') {
+                    setAssignment(cell, null);
+                }
+            });
+
+            // 获取非固定分配的任务
+            const availableCells = Array.from(cells).filter(cell => {
+                const task = cell.getAttribute('data-task');
+                return task !== '前台区域大扫除';
+            });
+
+            // 确保每个可分配任务都有人分配
+            let employeeIndex = 0;
+            availableCells.forEach(cell => {
                 const employee = shuffledEmployees[employeeIndex % shuffledEmployees.length];
                 setAssignment(cell, employee);
                 employeeIndex++;
             });
 
-            showSuccessMessage('随机分配完成！所有任务已分配人员。');
+            showSuccessMessage('随机分配完成！所有任务已分配人员（吴思湘固定分配前台区域大扫除）。');
         }
 
         // 清空所有分配
         function clearAllAssignments() {
-            if (confirm('确定要清空所有任务分配吗？')) {
+            if (confirm('确定要清空所有任务分配吗？（注意：吴思湘的前台区域大扫除固定分配将保留）')) {
                 const cells = document.querySelectorAll('.cleaning-cell[data-task]');
-                cells.forEach(cell => setAssignment(cell, null));
-                showSuccessMessage('已清空所有分配！');
+                cells.forEach(cell => {
+                    const task = cell.getAttribute('data-task');
+                    if (task !== '前台区域大扫除') {
+                        setAssignment(cell, null);
+                    }
+                });
+                showSuccessMessage('已清空所有分配！（吴思湘的前台区域大扫除固定分配已保留）');
             }
         }
 
