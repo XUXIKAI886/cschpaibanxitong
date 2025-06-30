@@ -303,7 +303,7 @@ font-family: 'Noto Sans SC', 'Inter', 'Microsoft YaHei', -apple-system, BlinkMac
 ### 👥 销售部人员名单
 ```
 韩大武、赵永鸿、梁智、屈维涛、胡双双、
-朱雯雯、陈吉姝、陶思雨、杜娟、蒋序楚、冯姗姗
+朱雯雯、陈吉姝、陶思雨、吴思湘、蒋序楚、冯姗姗
 ```
 **总计：11名销售部员工**
 
