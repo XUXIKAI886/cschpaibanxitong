@@ -1431,20 +1431,32 @@
                 return task !== '前台清洁（固定：吴思湘）' && task !== '大厅角落清洁（固定：徐晓辉）';
             });
 
-            // 确保每个可分配任务都有人分配
+            // 只为有可用员工的任务分配人员，避免重复分配
             let employeeIndex = 0;
             availableCells.forEach(cell => {
-                const employee = shuffledEmployees[employeeIndex % shuffledEmployees.length];
-                setAssignment(cell, employee);
-                employeeIndex++;
+                if (employeeIndex < shuffledEmployees.length) {
+                    const employee = shuffledEmployees[employeeIndex];
+                    setAssignment(cell, employee);
+                    employeeIndex++;
+                } else {
+                    // 如果员工数量不足，保持任务空白
+                    setAssignment(cell, null);
+                }
             });
 
             const restCount = restEmployees.length;
             const participantCount = availableEmployees.length;
             const totalCount = companyEmployees.length;
+            const totalTasks = availableCells.length; // 可分配的任务总数（不包括固定分配）
+            const assignedTasks = Math.min(participantCount, totalTasks); // 实际分配的任务数
+            const unassignedTasks = totalTasks - assignedTasks; // 未分配的任务数
 
             let message = `随机分配完成！参与分配：${participantCount}人，休息：${restCount}人，总计：${totalCount}人`;
-            message += '（吴思湘固定分配前台，徐晓辉固定分配大厅角落）';
+            message += `\n已分配任务：${assignedTasks}个`;
+            if (unassignedTasks > 0) {
+                message += `，空余任务：${unassignedTasks}个（因人员不足）`;
+            }
+            message += '\n（吴思湘固定分配前台，徐晓辉固定分配大厅角落）';
 
             showSuccessMessage(message);
         }
