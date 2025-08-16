@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呈尚策划公司 - 销售部大扫除安排表</title>
+    <title>呈尚策划公司 - 大扫除安排表</title>
     <!-- Font Awesome 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
@@ -227,6 +227,67 @@
         .drag-item:active {
             cursor: grabbing;
             transform: scale(0.95);
+        }
+
+        /* 休息人员区域样式 */
+        .rest-area {
+            padding: 1.25rem;
+            background: var(--card-bg);
+            margin-top: 0.5rem;
+            position: relative;
+            box-shadow: var(--shadow-md);
+        }
+
+        .rest-items {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .rest-item {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            cursor: grab;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-md);
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, #9ca3af, #6b7280);
+            color: white;
+            border-color: #9ca3af;
+            opacity: 0.8;
+        }
+
+        .rest-item::before {
+            content: '💤 ';
+            font-size: 0.75rem;
+        }
+
+        .rest-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            opacity: 1;
+        }
+
+        .rest-item:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .rest-hint {
+            transition: opacity 0.3s ease;
+        }
+
+        .rest-items:not(:empty) .rest-hint {
+            display: none;
         }
 
         .table-area {
@@ -524,6 +585,19 @@
                 font-size: 0.75rem;
             }
 
+            .rest-area {
+                padding: 1rem;
+            }
+
+            .rest-items {
+                gap: 0.5rem;
+            }
+
+            .rest-item {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.75rem;
+            }
+
             .table-area {
                 padding: 1rem;
                 overflow-x: auto;
@@ -587,9 +661,9 @@
         <div class="header">
             <h1>
                 <i class="fas fa-broom"></i>
-                呈尚策划公司 - 销售部大扫除安排表
+                呈尚策划公司 - 大扫除安排表
             </h1>
-            <p>销售部清洁任务分配系统</p>
+            <p>公司清洁任务分配系统 - 24名员工，21个清洁任务</p>
         </div>
 
         <!-- 任务说明区域 -->
@@ -601,26 +675,34 @@
             <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
                     <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">大厅</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">3个任务 / 3人</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">6个任务 / 6人</div>
                 </div>
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
                     <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">总经理室</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">3个任务 / 3人</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">4个任务 / 4人</div>
                 </div>
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
                     <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">会议室</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">2个任务 / 2人</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">3个任务 / 3人</div>
                 </div>
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
-                    <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">客服部</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">2个任务 / 2人</div>
+                    <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">贵宾室</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">3个任务 / 3人</div>
                 </div>
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
-                    <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">杂物区</div>
+                    <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">前台</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">1个任务 / 1人</div>
+                </div>
+                <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
+                    <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">仓库</div>
                     <div style="font-size: 0.75rem; color: var(--text-secondary);">2个任务 / 2人</div>
                 </div>
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
                     <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">其他</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">1个任务 / 1人</div>
+                </div>
+                <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
+                    <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">大厅角落</div>
                     <div style="font-size: 0.75rem; color: var(--text-secondary);">1个任务 / 1人</div>
                 </div>
             </div>
@@ -630,10 +712,23 @@
         <div class="drag-area" style="border: 2px dashed var(--info-color); border-radius: var(--radius-lg); margin: 0.5rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));">
             <div class="drag-title">
                 <i class="fas fa-users"></i>
-                销售部人员名单 - 拖拽到下方任务表格中
+                公司人员名单 - 拖拽到下方任务表格中
             </div>
             <div class="drag-items" id="dragItems">
                 <!-- 销售部人员标签将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 周六休息人员区域 -->
+        <div class="rest-area" style="border: 2px dashed #9ca3af; border-radius: var(--radius-lg); margin: 0.5rem; background: linear-gradient(135deg, rgba(156, 163, 175, 0.1), rgba(209, 213, 219, 0.1));">
+            <div class="drag-title" style="color: #6b7280;">
+                <i class="fas fa-bed"></i>
+                周六休息人员区域 - 此区域人员不参与任务分配
+            </div>
+            <div class="rest-items" id="restItems" style="min-height: 60px; padding: 1rem; border: 1px dashed #d1d5db; border-radius: var(--radius-md); background: rgba(249, 250, 251, 0.8);">
+                <div class="rest-hint" style="text-align: center; color: #9ca3af; font-size: 0.875rem; padding: 1rem;">
+                    将需要休息的人员拖拽到此区域
+                </div>
             </div>
         </div>
 
@@ -680,40 +775,52 @@
     </div>
 
     <script>
-        // 销售部人员名单
-        const salesEmployees = [
-            '韩大武', '赵永鸿', '梁智', '屈维涛', '胡双双',
-            '朱雯雯', '陈吉姝', '陶思雨', '吴思湘', '蒋序楚', '冯杉杉',
-            '袁丽妮', '刘晓怡', '朱春玖', '魏祯宇', '向文强'
+        // 公司人员名单
+        const companyEmployees = [
+            '胡双双', '韩大武', '王涛', '赵永鸿', '梁智', '朱文雯',
+            '单龙龙', '王郡江', '陶思雨', '杨有淇', '蒋序楚', '冯杉杉',
+            '曾衡', '吴思湘', '陈吉姝', '屈维涛', '袁丽妮', '朱春玖',
+            '魏祯宇', '向文强', '陈冉', '张玉莲', '孙文龙', '徐晓辉'
         ];
 
         // 清洁区域和对应的具体任务
         const cleaningAreas = {
             '大厅': [
-                '擦桌子+擦证书展示区+隔断',
-                '拖地',
-                '扫地'
+                '扫地（第1人）',
+                '扫地（第2人）',
+                '拖地（第1人）',
+                '拖地（第2人）',
+                '擦所有桌椅，饮水机及墙面挂饰（第1人）',
+                '擦所有桌椅，饮水机及墙面挂饰（第2人）'
             ],
             '总经理室': [
-                '清洗茶具',
-                '擦桌子+扫地',
+                '洗茶具，收拾茶桌',
+                '擦桌椅及扫地',
+                '擦玻璃',
                 '拖地'
             ],
             '会议室': [
-                '擦桌子+扫地',
+                '擦桌椅，玻璃门及窗台',
+                '扫地',
                 '拖地'
             ],
-            '客服部': [
-                '扫地+拖地',
-                '擦桌子'
+            '贵宾室': [
+                '擦桌子窗台及玻璃门',
+                '扫地',
+                '拖地'
             ],
-            '杂物区': [
-                '擦洗微波炉转盘+擦饭桌+清洗洗手池+整理台面',
-                '擦玻璃墙'
+            '前台': [
+                '前台清洁（固定：吴思湘）'
+            ],
+            '仓库': [
+                '擦微波炉，桌面，收仓库',
+                '扫地拖地'
             ],
             '其他': [
-                '绿植浇水+换垃圾袋',
-                '前台区域大扫除'
+                '绿植浇水，换垃圾袋'
+            ],
+            '大厅角落': [
+                '大厅角落清洁（固定：徐晓辉）'
             ]
         };
 
@@ -722,21 +829,26 @@
             initDragItems();
             initCleaningTable();
             initDragAndDrop();
-            // 固定分配：吴思湘 → 前台区域大扫除
+            // 固定分配：吴思湘 → 前台，徐晓辉 → 大厅角落
             setFixedAssignment();
         }
 
         // 设置固定分配
         function setFixedAssignment() {
-            // 找到"前台区域大扫除"任务的单元格
+            // 找到需要固定分配的任务单元格
             const cells = document.querySelectorAll('.cleaning-cell');
             cells.forEach(cell => {
                 const task = cell.getAttribute('data-task');
-                if (task === '前台区域大扫除') {
-                    // 固定分配吴思湘到前台区域大扫除
+                if (task === '前台清洁（固定：吴思湘）') {
+                    // 固定分配吴思湘到前台
                     setAssignment(cell, '吴思湘');
                     // 从拖拽区域移除吴思湘
                     removeEmployeeFromDragArea('吴思湘');
+                } else if (task === '大厅角落清洁（固定：徐晓辉）') {
+                    // 固定分配徐晓辉到大厅角落
+                    setAssignment(cell, '徐晓辉');
+                    // 从拖拽区域移除徐晓辉
+                    removeEmployeeFromDragArea('徐晓辉');
                 }
             });
         }
@@ -755,7 +867,7 @@
         function initDragItems() {
             const dragItemsContainer = document.getElementById('dragItems');
             
-            salesEmployees.forEach(employee => {
+            companyEmployees.forEach(employee => {
                 const dragItem = document.createElement('div');
                 dragItem.className = 'drag-item';
                 dragItem.draggable = true;
@@ -838,7 +950,18 @@
 
         // 初始化拖拽功能
         function initDragAndDrop() {
-            // 拖拽功能已在初始化时添加
+            // 为休息区域添加拖拽事件监听器
+            const restItems = document.getElementById('restItems');
+
+            restItems.addEventListener('dragover', handleRestDragOver);
+            restItems.addEventListener('drop', handleRestDrop);
+            restItems.addEventListener('dragleave', handleDragLeave);
+
+            // 为人员名单区域添加拖拽事件监听器
+            const dragItems = document.getElementById('dragItems');
+            dragItems.addEventListener('dragover', handleDragItemsOver);
+            dragItems.addEventListener('drop', handleDragItemsDrop);
+            dragItems.addEventListener('dragleave', handleDragLeave);
         }
 
         // 拖拽开始事件
@@ -922,17 +1045,153 @@
             }
         }
 
+        // 处理休息区域拖拽悬停
+        function handleRestDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.style.backgroundColor = 'rgba(156, 163, 175, 0.2)';
+            e.currentTarget.style.borderColor = '#6b7280';
+        }
+
+        // 处理休息区域拖拽放置
+        function handleRestDrop(e) {
+            e.preventDefault();
+            const employee = e.dataTransfer.getData('text/plain');
+            const restContainer = e.currentTarget;
+
+            // 重置样式
+            restContainer.style.backgroundColor = '';
+            restContainer.style.borderColor = '';
+
+            // 检查是否已经在休息区域
+            const existingRestItem = restContainer.querySelector(`[data-employee="${employee}"]`);
+            if (existingRestItem) {
+                return;
+            }
+
+            // 从原来的位置移除
+            removeEmployeeFromAllAreas(employee);
+
+            // 添加到休息区域
+            addEmployeeToRestArea(employee);
+
+            // 隐藏提示文字
+            const hint = restContainer.querySelector('.rest-hint');
+            if (hint) {
+                hint.style.display = 'none';
+            }
+        }
+
+        // 处理人员名单区域拖拽悬停
+        function handleDragItemsOver(e) {
+            e.preventDefault();
+            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+        }
+
+        // 处理人员名单区域拖拽放置
+        function handleDragItemsDrop(e) {
+            e.preventDefault();
+            const employee = e.dataTransfer.getData('text/plain');
+            const dragContainer = e.currentTarget;
+
+            // 重置样式
+            dragContainer.style.backgroundColor = '';
+
+            // 检查是否已经在人员名单区域
+            const existingDragItem = dragContainer.querySelector(`[data-employee="${employee}"]`);
+            if (existingDragItem) {
+                return;
+            }
+
+            // 从休息区域移除
+            removeEmployeeFromRestArea(employee);
+
+            // 添加到人员名单区域
+            addEmployeeToDragArea(employee);
+        }
+
+        // 处理拖拽离开
+        function handleDragLeave(e) {
+            e.currentTarget.style.backgroundColor = '';
+            e.currentTarget.style.borderColor = '';
+        }
+
+        // 从所有区域移除员工
+        function removeEmployeeFromAllAreas(employee) {
+            removeEmployeeFromDragArea(employee);
+            removeEmployeeFromRestArea(employee);
+        }
+
+        // 从休息区域移除员工
+        function removeEmployeeFromRestArea(employee) {
+            const restItems = document.querySelectorAll('.rest-item');
+            restItems.forEach(item => {
+                if (item.getAttribute('data-employee') === employee) {
+                    item.remove();
+                }
+            });
+
+            // 检查是否需要显示提示文字
+            const restContainer = document.getElementById('restItems');
+            const remainingItems = restContainer.querySelectorAll('.rest-item');
+            const hint = restContainer.querySelector('.rest-hint');
+            if (remainingItems.length === 0 && hint) {
+                hint.style.display = 'block';
+            }
+        }
+
+        // 添加员工到休息区域
+        function addEmployeeToRestArea(employee) {
+            const restContainer = document.getElementById('restItems');
+
+            const restItem = document.createElement('div');
+            restItem.className = 'rest-item';
+            restItem.draggable = true;
+            restItem.textContent = employee;
+            restItem.setAttribute('data-employee', employee);
+
+            // 添加拖拽事件监听器
+            restItem.addEventListener('dragstart', handleDragStart);
+
+            restContainer.appendChild(restItem);
+        }
+
+        // 添加员工到人员名单区域
+        function addEmployeeToDragArea(employee) {
+            const dragContainer = document.getElementById('dragItems');
+
+            const dragItem = document.createElement('div');
+            dragItem.className = 'drag-item';
+            dragItem.draggable = true;
+            dragItem.textContent = employee;
+            dragItem.setAttribute('data-employee', employee);
+
+            // 添加拖拽事件监听器
+            dragItem.addEventListener('dragstart', handleDragStart);
+
+            dragContainer.appendChild(dragItem);
+        }
+
         // 随机分配任务
         function randomAssignTasks() {
             const cells = document.querySelectorAll('.cleaning-cell[data-task]');
-            // 排除固定分配的员工（吴思湘）
-            const availableEmployees = salesEmployees.filter(emp => emp !== '吴思湘');
+
+            // 获取休息区域的员工
+            const restEmployees = Array.from(document.querySelectorAll('.rest-item')).map(item =>
+                item.getAttribute('data-employee')
+            );
+
+            // 排除固定分配的员工（吴思湘、徐晓辉）和休息区域的员工
+            const availableEmployees = companyEmployees.filter(emp =>
+                emp !== '吴思湘' &&
+                emp !== '徐晓辉' &&
+                !restEmployees.includes(emp)
+            );
             const shuffledEmployees = [...availableEmployees].sort(() => Math.random() - 0.5);
 
             // 清空所有分配（除了固定分配）
             cells.forEach(cell => {
                 const task = cell.getAttribute('data-task');
-                if (task !== '前台区域大扫除') {
+                if (task !== '前台清洁（固定：吴思湘）' && task !== '大厅角落清洁（固定：徐晓辉）') {
                     setAssignment(cell, null);
                 }
             });
@@ -940,7 +1199,7 @@
             // 获取非固定分配的任务
             const availableCells = Array.from(cells).filter(cell => {
                 const task = cell.getAttribute('data-task');
-                return task !== '前台区域大扫除';
+                return task !== '前台清洁（固定：吴思湘）' && task !== '大厅角落清洁（固定：徐晓辉）';
             });
 
             // 确保每个可分配任务都有人分配
@@ -951,29 +1210,92 @@
                 employeeIndex++;
             });
 
-            showSuccessMessage('随机分配完成！所有任务已分配人员（吴思湘固定分配前台区域大扫除）。');
+            const restCount = restEmployees.length;
+            const participantCount = availableEmployees.length;
+            const totalCount = companyEmployees.length;
+
+            let message = `随机分配完成！参与分配：${participantCount}人，休息：${restCount}人，总计：${totalCount}人`;
+            message += '（吴思湘固定分配前台，徐晓辉固定分配大厅角落）';
+
+            showSuccessMessage(message);
         }
 
         // 清空所有分配
         function clearAllAssignments() {
-            if (confirm('确定要清空所有任务分配吗？（注意：吴思湘的前台区域大扫除固定分配将保留）')) {
+            if (confirm('确定要清空所有任务分配吗？（注意：吴思湘和徐晓辉的固定分配将保留，休息人员将返回人员名单）')) {
                 const cells = document.querySelectorAll('.cleaning-cell[data-task]');
                 cells.forEach(cell => {
                     const task = cell.getAttribute('data-task');
-                    if (task !== '前台区域大扫除') {
+                    if (task !== '前台清洁（固定：吴思湘）' && task !== '大厅角落清洁（固定：徐晓辉）') {
                         setAssignment(cell, null);
                     }
                 });
-                showSuccessMessage('已清空所有分配！（吴思湘的前台区域大扫除固定分配已保留）');
+
+                // 将休息区域的人员返回到人员名单区域
+                const restItems = document.querySelectorAll('.rest-item');
+                restItems.forEach(item => {
+                    const employee = item.getAttribute('data-employee');
+                    addEmployeeToDragArea(employee);
+                    item.remove();
+                });
+
+                // 显示休息区域提示
+                const restHint = document.querySelector('.rest-hint');
+                if (restHint) {
+                    restHint.style.display = 'block';
+                }
+
+                showSuccessMessage('已清空所有分配！（吴思湘和徐晓辉的固定分配已保留，休息人员已返回人员名单）');
             }
         }
 
         // 导出到Excel
         function exportToExcel() {
             const table = document.querySelector('.cleaning-table');
-            const wb = XLSX.utils.table_to_book(table, {sheet: "销售部大扫除安排"});
-            XLSX.writeFile(wb, "销售部大扫除安排表.xlsx");
-            showSuccessMessage('Excel文件导出成功！');
+
+            // 获取休息人员信息
+            const restEmployees = Array.from(document.querySelectorAll('.rest-item')).map(item =>
+                item.getAttribute('data-employee')
+            );
+
+            // 创建工作簿
+            const wb = XLSX.utils.table_to_book(table, {sheet: "任务分配表"});
+
+            // 如果有休息人员，添加休息人员工作表
+            if (restEmployees.length > 0) {
+                const restData = [
+                    ['周六休息人员'],
+                    ['姓名'],
+                    ...restEmployees.map(emp => [emp])
+                ];
+
+                const restSheet = XLSX.utils.aoa_to_sheet(restData);
+                XLSX.utils.book_append_sheet(wb, restSheet, "休息人员");
+            }
+
+            // 添加统计信息工作表
+            const totalEmployees = companyEmployees.length;
+            const restCount = restEmployees.length;
+            const workingCount = totalEmployees - restCount - 2; // 减去2个固定分配
+
+            const statsData = [
+                ['统计信息'],
+                ['项目', '人数'],
+                ['总员工数', totalEmployees],
+                ['参与任务分配', workingCount],
+                ['周六休息', restCount],
+                ['固定分配', 2],
+                ['', ''],
+                ['固定分配详情'],
+                ['吴思湘', '前台清洁'],
+                ['徐晓辉', '大厅角落清洁']
+            ];
+
+            const statsSheet = XLSX.utils.aoa_to_sheet(statsData);
+            XLSX.utils.book_append_sheet(wb, statsSheet, "统计信息");
+
+            XLSX.writeFile(wb, "公司大扫除安排表.xlsx");
+            showSuccessMessage('Excel文件导出成功！（包含休息人员和统计信息）');
         }
 
         // 保存分配
@@ -992,17 +1314,35 @@
                 assignments[task][area] = employee;
             });
 
+            // 保存休息人员信息
+            const restEmployees = Array.from(document.querySelectorAll('.rest-item')).map(item =>
+                item.getAttribute('data-employee')
+            );
+
+            const saveData = {
+                assignments: assignments,
+                restEmployees: restEmployees
+            };
+
             // 保存到localStorage
-            localStorage.setItem('salesCleaningAssignments', JSON.stringify(assignments));
-            showSuccessMessage('分配方案已保存！');
+            localStorage.setItem('salesCleaningAssignments', JSON.stringify(saveData));
+            showSuccessMessage('分配方案已保存！（包含休息人员信息）');
         }
 
         // 加载已保存的分配
         function loadAssignments() {
             const saved = localStorage.getItem('salesCleaningAssignments');
             if (saved) {
-                const assignments = JSON.parse(saved);
+                const saveData = JSON.parse(saved);
 
+                // 兼容旧版本数据格式
+                const assignments = saveData.assignments || saveData;
+                const restEmployees = saveData.restEmployees || [];
+
+                // 清空当前状态
+                clearAllAssignments();
+
+                // 加载任务分配
                 Object.keys(assignments).forEach(task => {
                     Object.keys(assignments[task]).forEach(area => {
                         const employee = assignments[task][area];
@@ -1013,7 +1353,23 @@
                     });
                 });
 
-                showSuccessMessage('已加载保存的分配方案！');
+                // 加载休息人员
+                restEmployees.forEach(employee => {
+                    // 从人员名单区域移除
+                    removeEmployeeFromDragArea(employee);
+                    // 添加到休息区域
+                    addEmployeeToRestArea(employee);
+                });
+
+                // 隐藏休息区域提示（如果有休息人员）
+                if (restEmployees.length > 0) {
+                    const hint = document.querySelector('.rest-hint');
+                    if (hint) {
+                        hint.style.display = 'none';
+                    }
+                }
+
+                showSuccessMessage('已加载保存的分配方案！（包含休息人员信息）');
             }
         }
 
@@ -1035,11 +1391,33 @@
         // 显示分配统计
         function showAssignmentStats() {
             const stats = getAssignmentStats();
-            const statsText = Object.keys(stats).length > 0
-                ? Object.entries(stats).map(([name, count]) => `${name}: ${count}个任务`).join('\n')
-                : '暂无任务分配';
+            const restEmployees = Array.from(document.querySelectorAll('.rest-item')).map(item =>
+                item.getAttribute('data-employee')
+            );
 
-            alert(`任务分配统计：\n\n${statsText}`);
+            const totalEmployees = companyEmployees.length;
+            const restCount = restEmployees.length;
+            const assignedCount = Object.keys(stats).length;
+            const unassignedCount = totalEmployees - assignedCount - restCount;
+
+            let statsText = `📊 人员统计：\n`;
+            statsText += `总员工数：${totalEmployees}人\n`;
+            statsText += `已分配任务：${assignedCount}人\n`;
+            statsText += `周六休息：${restCount}人\n`;
+            statsText += `未分配：${unassignedCount}人\n\n`;
+
+            if (restCount > 0) {
+                statsText += `💤 休息人员：\n${restEmployees.join('、')}\n\n`;
+            }
+
+            if (Object.keys(stats).length > 0) {
+                statsText += `🔧 任务分配详情：\n`;
+                statsText += Object.entries(stats).map(([name, count]) => `${name}: ${count}个任务`).join('\n');
+            } else {
+                statsText += '暂无任务分配';
+            }
+
+            alert(statsText);
         }
 
         // 显示成功消息

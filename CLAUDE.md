@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 1. **导航系统首页** (`index.html`) - 统一的系统导航入口
 2. **运营部排班系统** (`排班表系统.html`) - 智能排班算法和拖拽操作
-3. **销售部大扫除系统** (`销售部大扫除安排表.html`) - 清洁任务分配管理
+3. **公司大扫除系统** (`销售部大扫除安排表.html`) - 清洁任务分配管理
 
 ## 技术架构
 
@@ -84,11 +84,13 @@ const operationGroup = ['王郡江', '杨有淇', '张玉莲'];
 const designGroup = ['王涛', '单龙龙', '曾衡'];
 ```
 
-### 销售部人员
+### 公司人员
 ```javascript
-const salesEmployees = [
-    '韩大武', '赵永鸿', '梁智', '屈维涛', '胡双双',
-    '朱雯雯', '陈吉姝', '陶思雨', '吴思湘', '蒋序楚', '冯姗姗'
+const companyEmployees = [
+    '胡双双', '韩大武', '王涛', '赵永鸿', '梁智', '朱文雯',
+    '单龙龙', '王郡江', '陶思雨', '杨有淇', '蒋序楚', '冯杉杉',
+    '曾衡', '吴思湘', '陈吉姝', '屈维涛', '袁丽妮', '朱春玖',
+    '魏祯宇', '向文强', '陈冉', '张玉莲', '孙文龙', '徐晓辉'
 ];
 ```
 
@@ -155,7 +157,7 @@ const cleaningTasks = [
 
 ### 修改员工名单
 1. 编辑对应HTML文件中的JavaScript部分
-2. 修改`operationGroup`、`designGroup`或`salesEmployees`数组
+2. 修改`operationGroup`、`designGroup`或`companyEmployees`数组
 3. 保存文件即可生效
 
 ### 调整排班规则
