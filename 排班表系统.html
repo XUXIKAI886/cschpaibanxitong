@@ -675,145 +675,7 @@
             font-size: 1.125rem;
         }
 
-        /* 星期六大扫除安排区域样式 */
-        .cleaning-area {
-            padding: 1.25rem;
-            background: var(--light-bg);
-            border-top: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            display: none; /* 默认隐藏，只有星期六有人上班时才显示 */
-        }
 
-        .cleaning-title {
-            text-align: center;
-            font-size: 1.125rem;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .cleaning-title i {
-            color: var(--info-color);
-        }
-
-        .cleaning-cards {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .cleaning-card {
-            background: var(--card-bg);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-            min-width: 160px;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            text-align: center;
-        }
-
-        .cleaning-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--info-color), var(--primary-color));
-        }
-
-        .cleaning-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .cleaning-employee {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            font-size: 0.9375rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.375rem;
-        }
-
-        .cleaning-employee i {
-            color: var(--primary-color);
-            font-size: 0.875rem;
-        }
-
-        .cleaning-task {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            gap: 0.375rem;
-            padding: 0.5rem 0.75rem;
-            background: var(--light-bg);
-            border-radius: var(--radius-sm);
-            margin-top: 0.5rem;
-        }
-
-        .task-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
-        .task-name {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.25rem;
-        }
-
-        .task-description {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-            opacity: 0.8;
-        }
-
-        .cleaning-task i {
-            color: var(--success-color);
-        }
-
-        .cleaning-task.sweep i {
-            color: #8b5a2b; /* 棕色 - 扫地 */
-        }
-
-        .cleaning-task.mop i {
-            color: var(--info-color); /* 蓝色 - 拖地 */
-        }
-
-        .cleaning-task.wipe i {
-            color: var(--warning-color); /* 橙色 - 擦桌子 */
-        }
-
-        .cleaning-summary {
-            text-align: center;
-            margin-top: 1rem;
-            padding: 0.75rem;
-            background: rgba(99, 102, 241, 0.1);
-            border-radius: var(--radius-sm);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-        }
-
-        .cleaning-summary-text {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin: 0;
-        }
 
         @media (max-width: 768px) {
             body {
@@ -1078,21 +940,7 @@
             </table>
         </div>
 
-        <!-- 星期六大扫除安排区域 -->
-        <div class="cleaning-area" id="cleaningArea">
-            <div class="cleaning-title">
-                <i class="fas fa-broom"></i>
-                星期六大扫除任务分配
-            </div>
-            <div class="cleaning-cards" id="cleaningCards">
-                <!-- 大扫除任务卡片将通过JavaScript动态生成 -->
-            </div>
-            <div class="cleaning-summary">
-                <p class="cleaning-summary-text" id="cleaningSummary">
-                    <!-- 汇总信息将通过JavaScript动态生成 -->
-                </p>
-            </div>
-        </div>
+
 
         <!-- 底部操作区域 -->
         <div class="bottom-actions">
@@ -1136,30 +984,7 @@
         const designGroup = ['王涛', '单龙龙', '曾衡']; // 美工组
         const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'];
 
-        // 大扫除任务列表
-        const cleaningTasks = [
-            {
-                name: '扫地',
-                description: '（每个地方都要打扫干净）',
-                icon: 'fas fa-broom',
-                class: 'sweep',
-                maxCount: 1
-            },
-            {
-                name: '拖地',
-                description: '（地面要拖得干净无水渍）',
-                icon: 'fas fa-water',
-                class: 'mop',
-                maxCount: 2
-            },
-            {
-                name: '擦桌子',
-                description: '（桌面要擦拭光亮无灰尘）',
-                icon: 'fas fa-hand-sparkles',
-                class: 'wipe',
-                maxCount: 1
-            }
-        ];
+
         
         // 初始化排班表
         function initScheduleTable() {
@@ -1300,9 +1125,6 @@
             cell.style.transform = 'scale(1.1)';
             setTimeout(() => {
                 cell.style.transform = 'scale(1)';
-
-                // 检查是否需要更新大扫除安排
-                updateCleaningArrangement();
             }, 200);
         }
 
@@ -1408,10 +1230,7 @@
             // 显示成功提示
             showSuccessMessage();
 
-            // 更新大扫除安排
-            setTimeout(() => {
-                updateCleaningArrangement();
-            }, 100);
+
         }
 
         // 2天排班的特殊算法 - 严格互补排班逻辑
@@ -1631,9 +1450,7 @@
                     setScheduleStatus(cell, 'clear');
                 });
 
-                // 隐藏大扫除区域
-                const cleaningArea = document.getElementById('cleaningArea');
-                cleaningArea.style.display = 'none';
+
 
                 // 显示成功提示
                 showActionMessage('clear-btn', '<i class="fas fa-check"></i> 排班表已清空', '#ef4444');
@@ -1768,153 +1585,11 @@
             }, 2000);
         }
 
-        // 获取星期六上班人员
-        function getSaturdayWorkers() {
-            const saturdayWorkers = [];
-            const scheduleRows = document.querySelectorAll('#scheduleBody tr');
-            const saturdayColumnIndex = 6; // 星期六是第6列（从0开始计数）
 
-            scheduleRows.forEach(row => {
-                const employeeName = row.querySelector('.employee-name').textContent;
-                const saturdayCell = row.children[saturdayColumnIndex];
 
-                if (saturdayCell) {
-                    const scheduleCell = saturdayCell.querySelector('.schedule-cell');
-                    if (scheduleCell && scheduleCell.classList.contains('work-assigned')) {
-                        saturdayWorkers.push(employeeName);
-                    }
-                }
-            });
 
-            return saturdayWorkers;
-        }
 
-        // 按固定规则分配大扫除任务
-        function assignCleaningTasks(workers) {
-            const assignments = [];
-            const workersCopy = [...workers]; // 复制数组避免修改原数组
 
-            // 打乱员工顺序以确保随机性
-            for (let i = workersCopy.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [workersCopy[i], workersCopy[j]] = [workersCopy[j], workersCopy[i]];
-            }
-
-            // 按固定规则分配任务：2人拖地，1人扫地，1人擦桌子
-            const taskQueue = [];
-
-            // 根据人数创建任务队列
-            if (workersCopy.length >= 4) {
-                // 4人或以上：2人拖地，1人扫地，1人擦桌子，剩余人员继续拖地
-                taskQueue.push(cleaningTasks[1]); // 拖地
-                taskQueue.push(cleaningTasks[1]); // 拖地
-                taskQueue.push(cleaningTasks[0]); // 扫地
-                taskQueue.push(cleaningTasks[2]); // 擦桌子
-
-                // 剩余人员分配拖地
-                for (let i = 4; i < workersCopy.length; i++) {
-                    taskQueue.push(cleaningTasks[1]); // 拖地
-                }
-            } else if (workersCopy.length === 3) {
-                // 3人：1人拖地，1人扫地，1人擦桌子
-                taskQueue.push(cleaningTasks[1]); // 拖地
-                taskQueue.push(cleaningTasks[0]); // 扫地
-                taskQueue.push(cleaningTasks[2]); // 擦桌子
-            } else if (workersCopy.length === 2) {
-                // 2人：1人拖地，1人扫地
-                taskQueue.push(cleaningTasks[1]); // 拖地
-                taskQueue.push(cleaningTasks[0]); // 扫地
-            } else if (workersCopy.length === 1) {
-                // 1人：拖地
-                taskQueue.push(cleaningTasks[1]); // 拖地
-            }
-
-            // 分配任务给员工
-            workersCopy.forEach((worker, index) => {
-                assignments.push({
-                    employee: worker,
-                    task: taskQueue[index]
-                });
-            });
-
-            return assignments;
-        }
-
-        // 更新大扫除安排显示
-        function updateCleaningArrangement() {
-            const cleaningArea = document.getElementById('cleaningArea');
-            const cleaningCards = document.getElementById('cleaningCards');
-            const cleaningSummary = document.getElementById('cleaningSummary');
-
-            // 获取星期六上班人员
-            const saturdayWorkers = getSaturdayWorkers();
-
-            if (saturdayWorkers.length === 0) {
-                // 没有人星期六上班，隐藏大扫除区域
-                cleaningArea.style.display = 'none';
-                return;
-            }
-
-            // 有人星期六上班，显示大扫除区域
-            cleaningArea.style.display = 'block';
-
-            // 分配任务
-            const assignments = assignCleaningTasks(saturdayWorkers);
-
-            // 清空现有内容
-            cleaningCards.innerHTML = '';
-
-            // 生成任务卡片
-            assignments.forEach(assignment => {
-                const card = document.createElement('div');
-                card.className = 'cleaning-card';
-
-                card.innerHTML = `
-                    <div class="cleaning-employee">
-                        <i class="fas fa-user"></i>
-                        ${assignment.employee}
-                    </div>
-                    <div class="cleaning-task ${assignment.task.class}">
-                        <i class="${assignment.task.icon}"></i>
-                        <div class="task-content">
-                            <div class="task-name">${assignment.task.name}</div>
-                            <div class="task-description">${assignment.task.description}</div>
-                        </div>
-                    </div>
-                `;
-
-                cleaningCards.appendChild(card);
-            });
-
-            // 更新汇总信息
-            const taskCounts = {};
-            assignments.forEach(assignment => {
-                const taskName = assignment.task.name;
-                taskCounts[taskName] = (taskCounts[taskName] || 0) + 1;
-            });
-
-            const summaryParts = [];
-            // 按照优先级顺序显示：拖地、扫地、擦桌子
-            const taskOrder = ['拖地', '扫地', '擦桌子'];
-            taskOrder.forEach(taskName => {
-                if (taskCounts[taskName]) {
-                    summaryParts.push(`${taskName}：${taskCounts[taskName]}人`);
-                }
-            });
-
-            cleaningSummary.innerHTML = `
-                <i class="fas fa-info-circle" style="color: var(--info-color); margin-right: 0.5rem;"></i>
-                共${saturdayWorkers.length}人参与大扫除，任务分配：${summaryParts.join('，')}
-            `;
-
-            console.log('🧹 星期六大扫除任务分配完成：');
-            assignments.forEach(assignment => {
-                console.log(`   ${assignment.employee} → ${assignment.task.name}${assignment.task.description}`);
-            });
-
-            // 显示分配规则
-            console.log('📋 分配规则：2人拖地，1人扫地，1人擦桌子（人数不足时优先拖地）');
-        }
 
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -1933,7 +1608,7 @@
             console.log('   - 选择天数后点击智能排班按钮自动生成');
             console.log('   - 使用底部按钮进行清空、导出、保存操作');
             console.log('💡 新功能：2天互补排班算法，确保工作负荷平衡！');
-            console.log('🧹 大扫除功能：星期六有人上班时自动显示大扫除任务分配！');
+
         });
         
         // 添加键盘快捷键支持（可选功能）

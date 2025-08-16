@@ -147,6 +147,9 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid var(--border-color);
             position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         .nav-card::before {
@@ -202,6 +205,9 @@
 
         .card-body {
             padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .card-description {
@@ -214,6 +220,7 @@
         .card-features {
             list-style: none;
             margin-bottom: 2rem;
+            flex: 1;
         }
 
         .card-features li {
@@ -371,7 +378,6 @@
                             <li><i class="fas fa-check-circle"></i> 智能排班算法，支持2天互补排班</li>
                             <li><i class="fas fa-check-circle"></i> 拖拽式操作界面，直观易用</li>
                             <li><i class="fas fa-check-circle"></i> 星期天特殊规则：1运营+1美工</li>
-                            <li><i class="fas fa-check-circle"></i> 大扫除任务自动分配功能</li>
                             <li><i class="fas fa-check-circle"></i> Excel导出和数据管理</li>
                             <li><i class="fas fa-check-circle"></i> 响应式设计，支持移动设备</li>
                         </ul>
