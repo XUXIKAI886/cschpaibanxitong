@@ -290,6 +290,50 @@
             display: none;
         }
 
+        /* 右键菜单样式 */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            padding: 0.5rem 0;
+            z-index: 1000;
+            min-width: 160px;
+            display: none;
+        }
+
+        .context-menu-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .context-menu-item.disabled {
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .context-menu-item.disabled:hover {
+            background-color: transparent;
+        }
+
+        .context-menu-separator {
+            height: 1px;
+            background-color: #e5e7eb;
+            margin: 0.25rem 0;
+        }
+
         .table-area {
             padding: 1.25rem;
             background: var(--card-bg);
@@ -664,6 +708,17 @@
                 呈尚策划公司 - 大扫除安排表
             </h1>
             <p>公司清洁任务分配系统 - 24名员工，21个清洁任务</p>
+            <div style="background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; font-size: 0.875rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+                <div style="font-weight: 600; color: #4f46e5; margin-bottom: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> 使用说明
+                </div>
+                <div style="color: #374151; line-height: 1.5;">
+                    • <strong style="color: #1f2937;">设为休息：</strong>右键点击人员名单中的员工，选择"设为周六休息"<br>
+                    • <strong style="color: #1f2937;">分配任务：</strong>右键点击人员，选择"分配到任务"，然后点击要分配的任务格<br>
+                    • <strong style="color: #1f2937;">恢复上班：</strong>右键点击休息区域的员工，选择"设为正常上班"<br>
+                    • <strong style="color: #1f2937;">随机分配：</strong>点击"随机分配"按钮，自动为所有上班员工分配任务
+                </div>
+            </div>
         </div>
 
         <!-- 任务说明区域 -->
@@ -712,7 +767,7 @@
         <div class="drag-area" style="border: 2px dashed var(--info-color); border-radius: var(--radius-lg); margin: 0.5rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));">
             <div class="drag-title">
                 <i class="fas fa-users"></i>
-                公司人员名单 - 拖拽到下方任务表格中
+                公司人员名单 - 右键选择操作
             </div>
             <div class="drag-items" id="dragItems">
                 <!-- 销售部人员标签将通过JavaScript动态生成 -->
@@ -727,7 +782,7 @@
             </div>
             <div class="rest-items" id="restItems" style="min-height: 60px; padding: 1rem; border: 1px dashed #d1d5db; border-radius: var(--radius-md); background: rgba(249, 250, 251, 0.8);">
                 <div class="rest-hint" style="text-align: center; color: #9ca3af; font-size: 0.875rem; padding: 1rem;">
-                    将需要休息的人员拖拽到此区域
+                    右键点击人员选择"设为周六休息"
                 </div>
             </div>
         </div>
@@ -828,7 +883,7 @@
         function initPage() {
             initDragItems();
             initCleaningTable();
-            initDragAndDrop();
+            initContextMenu();
             // 固定分配：吴思湘 → 前台，徐晓辉 → 大厅角落
             setFixedAssignment();
         }
@@ -870,13 +925,12 @@
             companyEmployees.forEach(employee => {
                 const dragItem = document.createElement('div');
                 dragItem.className = 'drag-item';
-                dragItem.draggable = true;
                 dragItem.textContent = employee;
                 dragItem.setAttribute('data-employee', employee);
-                
-                // 添加拖拽事件监听器
-                dragItem.addEventListener('dragstart', handleDragStart);
-                
+
+                // 添加右键菜单事件监听器
+                dragItem.addEventListener('contextmenu', handleContextMenu);
+
                 dragItemsContainer.appendChild(dragItem);
             });
         }
@@ -919,16 +973,13 @@
                         cleaningCell.className = 'cleaning-cell';
                         cleaningCell.innerHTML = `
                             <div class="task-name-text">${tasks[taskIndex]}</div>
-                            <div class="drag-hint-text">拖拽人员到此</div>
+                            <div class="drag-hint-text">右键选择人员分配</div>
                         `;
                         cleaningCell.setAttribute('data-task', tasks[taskIndex]);
                         cleaningCell.setAttribute('data-area', area);
                         cleaningCell.setAttribute('data-task-index', taskIndex);
 
-                        // 添加拖拽事件监听器
-                        cleaningCell.addEventListener('dragover', handleDragOver);
-                        cleaningCell.addEventListener('drop', handleDrop);
-                        cleaningCell.addEventListener('dragleave', handleDragLeave);
+                        // 添加双击事件监听器
                         cleaningCell.addEventListener('dblclick', handleDoubleClick);
 
                         cell.appendChild(cleaningCell);
@@ -948,57 +999,20 @@
             table.appendChild(tbody);
         }
 
-        // 初始化拖拽功能
-        function initDragAndDrop() {
-            // 为休息区域添加拖拽事件监听器
-            const restItems = document.getElementById('restItems');
+        // 初始化右键菜单功能
+        function initContextMenu() {
+            // 添加全局点击事件监听器，用于隐藏右键菜单
+            document.addEventListener('click', hideContextMenu);
 
-            restItems.addEventListener('dragover', handleRestDragOver);
-            restItems.addEventListener('drop', handleRestDrop);
-            restItems.addEventListener('dragleave', handleDragLeave);
-
-            // 为人员名单区域添加拖拽事件监听器
-            const dragItems = document.getElementById('dragItems');
-            dragItems.addEventListener('dragover', handleDragItemsOver);
-            dragItems.addEventListener('drop', handleDragItemsDrop);
-            dragItems.addEventListener('dragleave', handleDragLeave);
+            // 为右键菜单项添加事件监听器
+            document.getElementById('moveToRest').addEventListener('click', handleMoveToRest);
+            document.getElementById('moveToWork').addEventListener('click', handleMoveToWork);
+            document.getElementById('assignToTask').addEventListener('click', handleAssignToTask);
         }
 
-        // 拖拽开始事件
-        function handleDragStart(e) {
-            const employee = e.target.getAttribute('data-employee');
-            e.dataTransfer.setData('text/plain', employee);
-            e.target.style.opacity = '0.5';
-            
-            // 添加拖拽效果
-            setTimeout(() => {
-                e.target.style.opacity = '1';
-            }, 100);
-        }
 
-        // 拖拽悬停事件
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('drag-over');
-        }
 
-        // 拖拽离开事件
-        function handleDragLeave(e) {
-            e.currentTarget.classList.remove('drag-over');
-        }
 
-        // 拖拽放置事件
-        function handleDrop(e) {
-            e.preventDefault();
-            const employee = e.dataTransfer.getData('text/plain');
-            const cell = e.currentTarget;
-
-            // 移除拖拽悬停效果
-            cell.classList.remove('drag-over');
-
-            // 设置分配状态
-            setAssignment(cell, employee);
-        }
 
         // 设置任务分配
         function setAssignment(cell, employee) {
@@ -1020,7 +1034,7 @@
             } else {
                 cell.innerHTML = `
                     <div class="task-name-text">${task}</div>
-                    <div class="drag-hint-text">拖拽人员到此</div>
+                    <div class="drag-hint-text">右键选择人员分配</div>
                 `;
             }
 
@@ -1045,75 +1059,292 @@
             }
         }
 
-        // 处理休息区域拖拽悬停
-        function handleRestDragOver(e) {
+        // 全局变量存储当前右键点击的员工
+        let currentContextEmployee = null;
+        // 全局变量存储当前要分配任务的员工
+        let currentAssignEmployee = null;
+
+        // 处理右键菜单
+        function handleContextMenu(e) {
             e.preventDefault();
-            e.currentTarget.style.backgroundColor = 'rgba(156, 163, 175, 0.2)';
-            e.currentTarget.style.borderColor = '#6b7280';
+            const employee = e.target.getAttribute('data-employee');
+            currentContextEmployee = employee;
+
+            const contextMenu = document.getElementById('contextMenu');
+            const moveToRest = document.getElementById('moveToRest');
+            const moveToWork = document.getElementById('moveToWork');
+            const assignToTask = document.getElementById('assignToTask');
+
+            // 根据员工当前状态设置菜单项的可用性
+            const isInRestArea = document.querySelector(`.rest-item[data-employee="${employee}"]`) !== null;
+            const isFixedEmployee = employee === '吴思湘' || employee === '徐晓辉';
+
+            // 设置菜单项状态
+            if (isFixedEmployee) {
+                moveToRest.classList.add('disabled');
+                moveToWork.classList.add('disabled');
+                assignToTask.classList.add('disabled');
+            } else {
+                moveToRest.classList.remove('disabled');
+                moveToWork.classList.remove('disabled');
+                assignToTask.classList.remove('disabled');
+
+                if (isInRestArea) {
+                    moveToRest.classList.add('disabled');
+                } else {
+                    moveToWork.classList.add('disabled');
+                }
+            }
+
+            // 显示菜单
+            contextMenu.style.display = 'block';
+
+            // 使用clientX和clientY相对于可视区域定位
+            let menuX = e.clientX;
+            let menuY = e.clientY;
+
+            // 使用setTimeout确保菜单已渲染，然后调整位置
+            setTimeout(() => {
+                // 获取菜单尺寸以防止超出屏幕边界
+                const menuRect = contextMenu.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                // 如果菜单会超出右边界，向左调整
+                if (menuX + menuRect.width > viewportWidth) {
+                    menuX = viewportWidth - menuRect.width - 10;
+                }
+
+                // 如果菜单会超出下边界，向上调整
+                if (menuY + menuRect.height > viewportHeight) {
+                    menuY = viewportHeight - menuRect.height - 10;
+                }
+
+                // 确保菜单不会超出左边界和上边界
+                menuX = Math.max(10, menuX);
+                menuY = Math.max(10, menuY);
+
+                contextMenu.style.left = menuX + 'px';
+                contextMenu.style.top = menuY + 'px';
+            }, 0);
         }
 
-        // 处理休息区域拖拽放置
-        function handleRestDrop(e) {
-            e.preventDefault();
-            const employee = e.dataTransfer.getData('text/plain');
-            const restContainer = e.currentTarget;
+        // 隐藏右键菜单
+        function hideContextMenu() {
+            const contextMenu = document.getElementById('contextMenu');
+            contextMenu.style.display = 'none';
+            currentContextEmployee = null;
+        }
 
-            // 重置样式
-            restContainer.style.backgroundColor = '';
-            restContainer.style.borderColor = '';
-
-            // 检查是否已经在休息区域
-            const existingRestItem = restContainer.querySelector(`[data-employee="${employee}"]`);
-            if (existingRestItem) {
+        // 处理移动到休息区域
+        function handleMoveToRest() {
+            if (!currentContextEmployee || document.getElementById('moveToRest').classList.contains('disabled')) {
                 return;
             }
 
             // 从原来的位置移除
-            removeEmployeeFromAllAreas(employee);
+            removeEmployeeFromAllAreas(currentContextEmployee);
 
             // 添加到休息区域
-            addEmployeeToRestArea(employee);
+            addEmployeeToRestArea(currentContextEmployee);
 
             // 隐藏提示文字
-            const hint = restContainer.querySelector('.rest-hint');
+            const hint = document.querySelector('.rest-hint');
             if (hint) {
                 hint.style.display = 'none';
             }
+
+            hideContextMenu();
+            showSuccessMessage(`${currentContextEmployee} 已设为周六休息`);
         }
 
-        // 处理人员名单区域拖拽悬停
-        function handleDragItemsOver(e) {
-            e.preventDefault();
-            e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-        }
-
-        // 处理人员名单区域拖拽放置
-        function handleDragItemsDrop(e) {
-            e.preventDefault();
-            const employee = e.dataTransfer.getData('text/plain');
-            const dragContainer = e.currentTarget;
-
-            // 重置样式
-            dragContainer.style.backgroundColor = '';
-
-            // 检查是否已经在人员名单区域
-            const existingDragItem = dragContainer.querySelector(`[data-employee="${employee}"]`);
-            if (existingDragItem) {
+        // 处理移动到工作区域
+        function handleMoveToWork() {
+            if (!currentContextEmployee || document.getElementById('moveToWork').classList.contains('disabled')) {
                 return;
             }
 
             // 从休息区域移除
-            removeEmployeeFromRestArea(employee);
+            removeEmployeeFromRestArea(currentContextEmployee);
 
             // 添加到人员名单区域
-            addEmployeeToDragArea(employee);
+            addEmployeeToDragArea(currentContextEmployee);
+
+            hideContextMenu();
+            showSuccessMessage(`${currentContextEmployee} 已设为正常上班`);
         }
 
-        // 处理拖拽离开
-        function handleDragLeave(e) {
-            e.currentTarget.style.backgroundColor = '';
-            e.currentTarget.style.borderColor = '';
+        // 处理分配到任务
+        function handleAssignToTask() {
+            if (!currentContextEmployee || document.getElementById('assignToTask').classList.contains('disabled')) {
+                return;
+            }
+
+            // 保存当前员工信息到专用的分配变量
+            currentAssignEmployee = currentContextEmployee;
+
+            hideContextMenu();
+            showSuccessMessage(`请在下方任务表格中点击要分配给 ${currentAssignEmployee} 的任务`);
+
+            // 高亮显示可分配的任务格
+            highlightAvailableTasksSimple();
         }
+
+        // 高亮显示可分配的任务格
+        function highlightAvailableTasks(employee) {
+            // 先清除之前的高亮
+            clearTaskHighlights();
+
+            const cells = document.querySelectorAll('.cleaning-cell[data-task]');
+            cells.forEach(cell => {
+                if (!cell.classList.contains('assigned')) {
+                    cell.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                    cell.style.cursor = 'pointer';
+                    cell.setAttribute('data-highlight-employee', employee);
+                    cell.classList.add('task-highlight');
+
+                    // 使用bind方法确保正确传递参数
+                    const clickHandler = handleTaskAssignmentClick.bind(null, employee);
+
+                    // 添加点击事件
+                    cell.addEventListener('click', clickHandler, { once: true });
+                    // 存储处理函数引用以便后续清理
+                    cell._clickHandler = clickHandler;
+                }
+            });
+        }
+
+        // 简化的高亮显示可分配的任务格（使用全局变量）
+        function highlightAvailableTasksSimple() {
+            // 先清除之前的高亮
+            clearTaskHighlights();
+
+            const cells = document.querySelectorAll('.cleaning-cell[data-task]');
+            cells.forEach(cell => {
+                if (!cell.classList.contains('assigned')) {
+                    cell.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                    cell.style.cursor = 'pointer';
+                    cell.classList.add('task-highlight');
+
+                    // 使用简单的点击处理函数
+                    const clickHandler = handleSimpleTaskAssignment;
+
+                    // 添加点击事件
+                    cell.addEventListener('click', clickHandler, { once: true });
+                    // 存储处理函数引用以便后续清理
+                    cell._clickHandler = clickHandler;
+                }
+            });
+        }
+
+        // 简化的任务分配点击处理函数
+        function handleSimpleTaskAssignment(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // 确保获取到正确的任务格元素
+            let cell = e.target;
+            if (!cell.classList.contains('cleaning-cell')) {
+                cell = e.target.closest('.cleaning-cell');
+            }
+
+            if (!cell) {
+                clearTaskHighlights();
+                return;
+            }
+
+            const employee = currentAssignEmployee;
+            console.log('简化分配任务 - 员工:', employee, '任务:', cell.getAttribute('data-task'));
+
+            if (employee && employee !== 'null' && employee !== 'undefined' && !cell.classList.contains('assigned')) {
+                // 从人员名单区域移除
+                removeEmployeeFromDragArea(employee);
+
+                // 分配到任务
+                setAssignment(cell, employee);
+
+                showSuccessMessage(`${employee} 已分配到任务：${cell.getAttribute('data-task')}`);
+
+                // 清空分配员工变量
+                currentAssignEmployee = null;
+            } else if (!employee || employee === 'null' || employee === 'undefined') {
+                showSuccessMessage('员工信息丢失，请重新右键选择要分配的人员');
+                console.error('员工参数无效:', employee);
+            } else if (cell.classList.contains('assigned')) {
+                showSuccessMessage('此任务已被分配，请选择其他任务');
+            }
+
+            // 清除所有高亮
+            clearTaskHighlights();
+        }
+
+        // 处理任务分配点击（新版本，直接传递员工参数）
+        function handleTaskAssignmentClick(employee, e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // 确保获取到正确的任务格元素
+            let cell = e.target;
+            if (!cell.classList.contains('cleaning-cell')) {
+                cell = e.target.closest('.cleaning-cell');
+            }
+
+            if (!cell) {
+                clearTaskHighlights();
+                return;
+            }
+
+            console.log('分配任务 - 员工:', employee, '任务:', cell.getAttribute('data-task'));
+
+            if (employee && employee !== 'null' && employee !== 'undefined' && !cell.classList.contains('assigned')) {
+                // 从人员名单区域移除
+                removeEmployeeFromDragArea(employee);
+
+                // 分配到任务
+                setAssignment(cell, employee);
+
+                showSuccessMessage(`${employee} 已分配到任务：${cell.getAttribute('data-task')}`);
+            } else if (!employee || employee === 'null' || employee === 'undefined') {
+                showSuccessMessage('员工信息丢失，请重新右键选择要分配的人员');
+            } else if (cell.classList.contains('assigned')) {
+                showSuccessMessage('此任务已被分配，请选择其他任务');
+            }
+
+            // 清除所有高亮
+            clearTaskHighlights();
+        }
+
+        // 处理任务分配点击（旧版本，保留用于兼容性）
+        function handleTaskAssignment(e) {
+            const cell = e.target.closest('.cleaning-cell');
+            const employee = cell ? cell.getAttribute('data-highlight-employee') : null;
+
+            if (employee) {
+                handleTaskAssignmentClick(e, employee);
+            } else {
+                clearTaskHighlights();
+                showSuccessMessage('请先右键选择要分配的人员');
+            }
+        }
+
+        // 清除任务高亮
+        function clearTaskHighlights() {
+            const cells = document.querySelectorAll('.cleaning-cell.task-highlight');
+            cells.forEach(cell => {
+                cell.style.backgroundColor = '';
+                cell.style.cursor = '';
+                cell.removeAttribute('data-highlight-employee');
+                cell.classList.remove('task-highlight');
+
+                // 移除事件监听器
+                if (cell._clickHandler) {
+                    cell.removeEventListener('click', cell._clickHandler);
+                    delete cell._clickHandler;
+                }
+            });
+        }
+
+
 
         // 从所有区域移除员工
         function removeEmployeeFromAllAreas(employee) {
@@ -1145,12 +1376,11 @@
 
             const restItem = document.createElement('div');
             restItem.className = 'rest-item';
-            restItem.draggable = true;
             restItem.textContent = employee;
             restItem.setAttribute('data-employee', employee);
 
-            // 添加拖拽事件监听器
-            restItem.addEventListener('dragstart', handleDragStart);
+            // 添加右键菜单事件监听器
+            restItem.addEventListener('contextmenu', handleContextMenu);
 
             restContainer.appendChild(restItem);
         }
@@ -1161,12 +1391,11 @@
 
             const dragItem = document.createElement('div');
             dragItem.className = 'drag-item';
-            dragItem.draggable = true;
             dragItem.textContent = employee;
             dragItem.setAttribute('data-employee', employee);
 
-            // 添加拖拽事件监听器
-            dragItem.addEventListener('dragstart', handleDragStart);
+            // 添加右键菜单事件监听器
+            dragItem.addEventListener('contextmenu', handleContextMenu);
 
             dragContainer.appendChild(dragItem);
         }
@@ -1461,5 +1690,22 @@
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', initPage);
     </script>
+
+    <!-- 右键菜单 -->
+    <div id="contextMenu" class="context-menu">
+        <div class="context-menu-item" id="moveToRest">
+            <i class="fas fa-bed"></i>
+            设为周六休息
+        </div>
+        <div class="context-menu-item" id="moveToWork">
+            <i class="fas fa-briefcase"></i>
+            设为正常上班
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" id="assignToTask">
+            <i class="fas fa-hand-pointer"></i>
+            分配到任务
+        </div>
+    </div>
 </body>
 </html>
