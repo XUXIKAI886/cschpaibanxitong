@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个基于HTML5的智能排班管理系统，包含三个核心模块：
+这是一个基于HTML5的智能排班管理系统，采用纯前端架构，包含三个核心模块：
 
 1. **导航系统首页** (`index.html`) - 统一的系统导航入口
 2. **运营部排班系统** (`排班表系统.html`) - 智能排班算法和拖拽操作
@@ -76,43 +76,25 @@ python -m http.server 8000
 - `handleDrop()` - 拖拽放置处理
 - `setAssignment()` - 任务分配设置
 
-## 团队配置
+## 配置与规则
 
-### 运营部人员
+### 团队人员配置
+运营部人员存储在各HTML文件的JavaScript部分：
+- **运营组**: `operationGroup` 数组（3人）
+- **美工组**: `designGroup` 数组（3人） 
+- **公司人员**: `companyEmployees` 数组（23人）
+
+### 排班业务规则
+- **星期天**: 固定1运营+1美工（总计2人）
+- **2天互补**: 选择2天时每人工作1天休息1天
+- **大扫除**: 星期六上班时自动分配清洁任务
+- **人数范围**: 常规排班2-5人
+
+### 配置修改方法
 ```javascript
-const operationGroup = ['王郡江', '杨有淇', '张玉莲'];
-const designGroup = ['王涛', '单龙龙', '曾衡'];
-```
-
-### 公司人员
-```javascript
-const companyEmployees = [
-    '胡双双', '韩大武', '王涛', '赵永鸿', '梁智', '朱文雯',
-    '单龙龙', '王郡江', '陶思雨', '杨有淇', '蒋序楚', '冯杉杉',
-    '曾衡', '吴思湘', '陈吉姝', '屈维涛', '袁丽妮', '朱春玖',
-    '魏祯宇', '向文强', '陈冉', '张玉莲', '孙文龙', '徐晓辉'
-];
-```
-
-## 排班规则配置
-
-### 特殊排班规则
-- **星期天规则**: 固定1个运营+1个美工（2人总数）
-- **2天互补规则**: 选择2天排班时，每人恰好工作1天休息1天
-- **大扫除规则**: 星期六有人上班时自动分配清洁任务（2人拖地+1人扫地+1人擦桌子）
-
-### 可配置参数
-```javascript
-// 排班人数配置
-const sundayWorkCount = 2;  // 星期天上班人数
-const normalWorkRange = [2, 5];  // 常规排班人数范围
-
-// 大扫除任务配置
-const cleaningTasks = [
-    { name: '拖地', maxCount: 2, icon: 'fas fa-hand-sparkles' },
-    { name: '扫地', maxCount: 1, icon: 'fas fa-broom' },
-    { name: '擦桌子', maxCount: 1, icon: 'fas fa-spray-can' }
-];
+// 修改人员名单 - 编辑对应HTML文件中的JavaScript数组
+// 修改排班参数 - 调整 sundayWorkCount 等常量
+// 自定义大扫除任务 - 修改 cleaningTasks 配置
 ```
 
 ## CSS设计系统
@@ -153,47 +135,29 @@ const cleaningTasks = [
 - 任务分配数据格式：`{taskId: employeeName}`
 - 状态值：`'work'`（上班）、`'rest'`（休息）、`null`（未安排）
 
-## 常见任务
+## 常见开发任务
 
 ### 修改员工名单
-1. 编辑对应HTML文件中的JavaScript部分
-2. 修改`operationGroup`、`designGroup`或`companyEmployees`数组
-3. 保存文件即可生效
+在对应HTML文件的`<script>`部分找到相关数组并修改：
+- 运营部系统：修改`operationGroup`、`designGroup`
+- 大扫除系统：修改`companyEmployees`
 
-### 调整排班规则
-1. 找到`generateTwoDaySchedule()`或`generateRegularSchedule()`函数
-2. 修改相关算法逻辑
-3. 测试新规则是否符合预期
+### 调整排班算法
+核心算法函数位于`排班表系统.html`：
+- `generateTwoDaySchedule()` - 2天互补排班
+- `generateRegularSchedule()` - 常规随机排班
+- 测试时注意验证特殊规则（星期天2人限制等）
 
-### 自定义大扫除任务
-1. 编辑`cleaningTasks`配置数组
-2. 修改任务名称、图标、人数限制
-3. 更新对应的分配算法
-
-### 添加新功能模块
-1. 参考现有HTML文件结构
-2. 使用统一的CSS变量系统
-3. 遵循响应式设计原则
-4. 确保返回首页功能正常
+### 自定义UI样式
+所有系统使用统一的CSS变量系统，修改时保持一致性：
+- 主色调：`--primary-color`
+- 功能色：`--success-color`, `--warning-color`等
+- 详细规范参考`UI设计规范文档.md`
 
 ## 故障排除
 
 ### 常见问题
-1. **拖拽不工作**: 检查浏览器是否支持HTML5拖拽API
-2. **Excel导出失败**: 确认SheetJS库正常加载
-3. **字体显示异常**: 检查Google Fonts网络连接
-4. **数据丢失**: 检查localStorage是否被清理
-
-### 调试技巧
-- 使用浏览器开发者工具查看控制台错误
-- 检查网络面板确认外部资源加载
-- 使用localStorage查看器检查数据存储
-- 在移动端使用远程调试功能
-
-## UI设计规范
-
-参考`UI设计规范文档.md`获取完整的设计系统说明，包括：
-- 颜色系统和主题配置
-- 组件规范和使用指南  
-- 响应式设计断点
-- 动画和交互效果规范
+- **拖拽失效**: 检查HTML5拖拽API支持
+- **导出失败**: 验证SheetJS库加载状态
+- **字体异常**: 确认Google Fonts网络访问
+- **数据丢失**: 检查localStorage权限和存储空间
