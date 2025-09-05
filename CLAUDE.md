@@ -82,7 +82,7 @@ python -m http.server 8000
 运营部人员存储在各HTML文件的JavaScript部分：
 - **运营组**: `operationGroup` 数组（3人）
 - **美工组**: `designGroup` 数组（3人） 
-- **公司人员**: `companyEmployees` 数组（23人）
+- **公司人员**: `companyEmployees` 数组（22人）
 
 ### 排班业务规则
 - **星期天**: 固定1运营+1美工（总计2人）
