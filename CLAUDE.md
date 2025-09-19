@@ -49,7 +49,7 @@ python -m http.server 8000
 ├── index.html                        # 导航系统首页
 ├── 排班表系统.html                    # 运营部排班系统
 ├── 销售部大扫除安排表.html            # 销售部大扫除系统
-├── cschpaibanxitong/                 # 备份文件夹
+├── cschpaibanxitong/                 # 备份文件夹（如果存在）
 │   ├── index.html
 │   ├── 排班表系统.html
 │   └── 销售部大扫除安排表.html
@@ -80,9 +80,9 @@ python -m http.server 8000
 
 ### 团队人员配置
 运营部人员存储在各HTML文件的JavaScript部分：
-- **运营组**: `operationGroup` 数组（3人）
+- **运营组**: `operationGroup` 数组（4人）
 - **美工组**: `designGroup` 数组（3人） 
-- **公司人员**: `companyEmployees` 数组（22人）
+- **公司人员**: `companyEmployees` 数组（23人）
 
 ### 排班业务规则
 - **星期天**: 固定1运营+1美工（总计2人）
@@ -139,8 +139,8 @@ python -m http.server 8000
 
 ### 修改员工名单
 在对应HTML文件的`<script>`部分找到相关数组并修改：
-- 运营部系统：修改`operationGroup`、`designGroup`
-- 大扫除系统：修改`companyEmployees`
+- 运营部系统：修改`operationGroup`（当前4人）、`designGroup`（当前3人）
+- 大扫除系统：修改`companyEmployees`（当前23人）
 
 ### 调整排班算法
 核心算法函数位于`排班表系统.html`：
