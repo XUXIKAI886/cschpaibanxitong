@@ -794,6 +794,19 @@
             </table>
         </div>
 
+        <!-- 未分配人员区域（协助整体大扫除） -->
+        <div class="rest-area" style="border: 2px dashed var(--warning-color); border-radius: var(--radius-lg); margin: 0.5rem; background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));">
+            <div class="drag-title" style="color: #d97706;">
+                <i class="fas fa-hands-helping"></i>
+                未分配人员 - 协助整体大扫除
+            </div>
+            <div id="unassignedItems" style="min-height: 60px; padding: 1rem; border: 1px dashed #fbbf24; border-radius: var(--radius-md); background: rgba(255, 251, 235, 0.8); display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center;">
+                <div class="unassigned-hint" style="text-align: center; color: #d97706; font-size: 0.875rem; padding: 1rem; width: 100%;">
+                    暂无未分配人员（所有上班员工均已分配任务）
+                </div>
+            </div>
+        </div>
+
         <!-- 底部操作区域 -->
         <div class="bottom-actions">
             <div class="action-buttons">
@@ -877,6 +890,8 @@
             initContextMenu();
             // 固定分配：吴思湘 → 前台，徐晓辉 → 大厅角落
             setFixedAssignment();
+            // 初始化未分配人员列表
+            updateUnassignedList();
         }
 
         // 设置固定分配
@@ -1034,6 +1049,9 @@
             setTimeout(() => {
                 cell.style.transform = 'scale(1)';
             }, 300);
+
+            // 更新未分配人员列表
+            updateUnassignedList();
         }
 
         // 双击删除功能
@@ -1147,6 +1165,8 @@
 
             hideContextMenu();
             showSuccessMessage(`${currentContextEmployee} 已设为周六休息`);
+            // 更新未分配人员列表
+            updateUnassignedList();
         }
 
         // 处理移动到工作区域
@@ -1163,6 +1183,8 @@
 
             hideContextMenu();
             showSuccessMessage(`${currentContextEmployee} 已设为正常上班`);
+            // 更新未分配人员列表
+            updateUnassignedList();
         }
 
         // 处理分配到任务
@@ -1450,6 +1472,8 @@
             message += '\n（吴思湘固定分配前台，徐晓辉固定分配大厅角落）';
 
             showSuccessMessage(message);
+            // 更新未分配人员列表
+            updateUnassignedList();
         }
 
         // 清空所有分配
@@ -1478,6 +1502,8 @@
                 }
 
                 showSuccessMessage('已清空所有分配！（吴思湘和徐晓辉的固定分配已保留，休息人员已返回人员名单）');
+                // 更新未分配人员列表
+                updateUnassignedList();
             }
         }
 
@@ -1602,6 +1628,8 @@
                 }
 
                 showSuccessMessage('已加载保存的分配方案！（包含休息人员信息）');
+                // 更新未分配人员列表
+                updateUnassignedList();
             }
         }
 
@@ -1688,6 +1716,66 @@
                 messageDiv.remove();
                 style.remove();
             }, 3000);
+        }
+
+        // 更新未分配人员列表
+        function updateUnassignedList() {
+            const unassignedContainer = document.getElementById('unassignedItems');
+
+            // 获取休息区域的员工
+            const restEmployees = Array.from(document.querySelectorAll('.rest-item')).map(item =>
+                item.getAttribute('data-employee')
+            );
+
+            // 获取已分配任务的员工
+            const assignedEmployees = [];
+            const assignedCells = document.querySelectorAll('.cleaning-cell.assigned');
+            assignedCells.forEach(cell => {
+                const employeeNameEl = cell.querySelector('.employee-name-text');
+                if (employeeNameEl) {
+                    // 提取纯文本姓名（去除图标）
+                    const name = employeeNameEl.textContent.trim();
+                    if (name && !assignedEmployees.includes(name)) {
+                        assignedEmployees.push(name);
+                    }
+                }
+            });
+
+            // 计算未分配的上班员工（排除休息员工和已分配员工）
+            const unassignedEmployees = companyEmployees.filter(emp =>
+                !restEmployees.includes(emp) && !assignedEmployees.includes(emp)
+            );
+
+            // 清空容器
+            unassignedContainer.innerHTML = '';
+
+            if (unassignedEmployees.length === 0) {
+                // 没有未分配人员
+                unassignedContainer.innerHTML = `
+                    <div class="unassigned-hint" style="text-align: center; color: #d97706; font-size: 0.875rem; padding: 1rem; width: 100%;">
+                        暂无未分配人员（所有上班员工均已分配任务）
+                    </div>
+                `;
+            } else {
+                // 显示未分配人员
+                unassignedEmployees.forEach(employee => {
+                    const item = document.createElement('div');
+                    item.style.cssText = `
+                        padding: 0.5rem 1rem;
+                        border-radius: 0.5rem;
+                        font-weight: 600;
+                        font-size: 0.8125rem;
+                        background: linear-gradient(135deg, #f59e0b, #d97706);
+                        color: white;
+                        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+                        display: flex;
+                        align-items: center;
+                        gap: 0.375rem;
+                    `;
+                    item.innerHTML = `<i class="fas fa-user"></i> ${employee}`;
+                    unassignedContainer.appendChild(item);
+                });
+            }
         }
 
         // 页面加载完成后初始化
