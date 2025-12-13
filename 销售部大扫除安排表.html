@@ -707,7 +707,7 @@
                 <i class="fas fa-broom"></i>
                 呈尚策划公司 - 大扫除安排表
             </h1>
-            <p>公司清洁任务分配系统 - 20名员工，18个清洁任务</p>
+            <p>公司清洁任务分配系统 - 19名员工，17个清洁任务</p>
             <div style="background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: var(--radius-md); padding: 1rem; margin: 1rem 0; font-size: 0.875rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
                 <div style="font-weight: 600; color: #4f46e5; margin-bottom: 0.5rem;">
                     <i class="fas fa-info-circle"></i> 使用说明
@@ -734,7 +734,7 @@
                 </div>
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
                     <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">总经理室</div>
-                    <div style="font-size: 0.75rem; color: var(--text-secondary);">4个任务 / 4人</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary);">3个任务 / 3人</div>
                 </div>
                 <div style="background: var(--card-bg); padding: 0.75rem; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); text-align: center; min-width: 120px;">
                     <div style="font-weight: 600; color: var(--primary-color); margin-bottom: 0.25rem;">会议室</div>
@@ -842,10 +842,10 @@
         // 公司人员名单
         const companyEmployees = [
             '胡双双', '韩大武', '王涛', '赵永鸿', '梁智', '朱文雯',
-            '王清月', '王郡江', '陶思雨', '杨有淇', '蒋序楚', '冯杉杉',
+            '王清月', '王郡江', '陶思雨', '杨有淇', '冯杉杉',
             '吴思湘', '陈吉姝', '屈维涛', '袁丽妮',
             '向文强', '陈冉', '张玉莲', '徐晓辉'
-        ]; // 总计20人（彭润梅、左冉已离职）
+        ]; // 总计19人（彭润梅、左冉、蒋序楚已离职）
 
         // 清洁区域和对应的具体任务
         const cleaningAreas = {
@@ -858,10 +858,9 @@
                 '擦所有桌椅，饮水机及墙面挂饰（第2人）'
             ],
             '总经理室': [
-                '洗茶具，收拾茶桌',
-                '擦桌椅及扫地',
-                '擦玻璃',
-                '拖地'
+                '洗茶具，擦桌椅',
+                '擦所有玻璃',
+                '扫地拖地'
             ],
             '会议室': [
                 '擦桌椅，玻璃门及窗台，加擦微波炉',
