@@ -1723,24 +1723,62 @@
                     console.log('📊 [Tauri] 图片尺寸:', canvas.width, 'x', canvas.height);
                     console.log('📊 [Tauri] RGBA数据长度:', rgbaData.length);
 
-                    // 调用Tauri API，传递RGBA数据
-                    await writeImageFunc(rgbaData);
-                    console.log('✅ [Tauri] 使用原生API复制图片成功');
-                    return true;
+                    // 尝试方法1: 传递包含宽高的对象
+                    try {
+                        await writeImageFunc({
+                            rgba: Array.from(rgbaData),
+                            width: canvas.width,
+                            height: canvas.height
+                        });
+                        console.log('✅ [Tauri] 使用原生API复制图片成功（方法1：对象格式）');
+                        return true;
+                    } catch (error1) {
+                        console.warn('⚠️ [Tauri] 方法1失败:', error1.message);
+
+                        // 尝试方法2: 只传递RGBA数据
+                        try {
+                            await writeImageFunc(rgbaData);
+                            console.log('✅ [Tauri] 使用原生API复制图片成功（方法2：纯数据）');
+                            return true;
+                        } catch (error2) {
+                            console.error('⚠️ [Tauri] 方法2也失败:', error2.message);
+                            throw error2;
+                        }
+                    }
                 }
 
-                // 方法3: 通过invoke调用（降级方案）
+                // 方法3: 使用PNG base64格式（推荐）
                 if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
-                    console.log('✅ [Tauri] 使用invoke方法');
-                    const ctx = canvas.getContext('2d');
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const rgbaData = new Uint8Array(imageData.data);
+                    console.log('✅ [Tauri] 尝试PNG base64方法');
 
-                    await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image', {
-                        image: Array.from(rgbaData)
-                    });
-                    console.log('✅ [Tauri] 使用invoke方法复制成功');
-                    return true;
+                    // 将canvas转换为PNG base64
+                    const base64Data = canvas.toDataURL('image/png');
+
+                    // 移除data:image/png;base64,前缀
+                    const base64Image = base64Data.replace(/^data:image\/png;base64,/, '');
+
+                    console.log('📊 [Tauri] Base64数据长度:', base64Image.length);
+
+                    try {
+                        await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image_base64', {
+                            image: base64Image
+                        });
+                        console.log('✅ [Tauri] PNG base64方法复制成功');
+                        return true;
+                    } catch (error) {
+                        console.warn('⚠️ [Tauri] PNG base64方法失败:', error.message);
+
+                        // 尝试原始PNG二进制数据
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        const arrayBuffer = await blob.arrayBuffer();
+                        const pngData = Array.from(new Uint8Array(arrayBuffer));
+
+                        await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image', {
+                            image: pngData
+                        });
+                        console.log('✅ [Tauri] PNG二进制方法复制成功');
+                        return true;
+                    }
                 }
 
                 console.warn('⚠️ [Tauri] 未找到可用的剪切板API');
