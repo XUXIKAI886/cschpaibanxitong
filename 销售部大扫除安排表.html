@@ -7,9 +7,11 @@
     <!-- Font Awesome 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <!-- SheetJS Excel导出库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- html2canvas 截图库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
 
         * {
@@ -19,73 +21,145 @@
         }
 
         :root {
-            --primary-color: #6366f1;
-            --primary-dark: #4f46e5;
+            /* 年轻活力浅色主题色彩系统 - 清新青色主题 */
+            --primary-color: #06b6d4;
+            --primary-light: #22d3ee;
+            --primary-dark: #0891b2;
             --secondary-color: #8b5cf6;
+            --accent-color: #f59e0b;
+            --accent-light: #fbbf24;
             --success-color: #10b981;
             --warning-color: #f59e0b;
             --danger-color: #ef4444;
-            --info-color: #3b82f6;
-            --light-bg: #f8fafc;
+            --info-color: #06b6d4;
+            --gradient-cyan: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+            --gradient-purple: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+            --gradient-rainbow: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #f59e0b 100%);
+            --bg-light: #ffffff;
+            --bg-cream: #f0fdff;
+            --bg-gradient: linear-gradient(135deg, #f0fdff 0%, #faf5ff 100%);
+            --light-bg: #ecfeff;
             --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            --radius-sm: 0.375rem;
-            --radius-md: 0.5rem;
-            --radius-lg: 0.75rem;
-            --radius-xl: 1rem;
+            --card-hover: #f0fdff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-tertiary: #9ca3af;
+            --border-color: #cffafe;
+            --border-accent: #06b6d4;
+            --hover-bg: rgba(6, 182, 212, 0.1);
+            --shadow-soft: 0 4px 16px rgba(6, 182, 212, 0.15);
+            --shadow-sm: 0 2px 8px rgba(6, 182, 212, 0.1);
+            --shadow-md: 0 8px 24px rgba(6, 182, 212, 0.2);
+            --shadow-medium: 0 8px 24px rgba(6, 182, 212, 0.2);
+            --shadow-lg: 0 12px 32px rgba(6, 182, 212, 0.25);
+            --shadow-strong: 0 12px 32px rgba(6, 182, 212, 0.25);
+            --shadow-xl: 0 20px 48px rgba(6, 182, 212, 0.3);
+            --shadow-colorful: 0 8px 32px rgba(6, 182, 212, 0.3), 0 4px 16px rgba(139, 92, 246, 0.2);
+            --radius-sm: 0.5rem;
+            --radius-md: 1rem;
+            --radius-lg: 1.5rem;
+            --radius-xl: 2rem;
         }
 
         body {
-            font-family: 'Noto Sans SC', 'Inter', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
-            padding: 0.75rem;
+            padding: 1rem;
             color: var(--text-primary);
-            line-height: 1.5;
+            line-height: 1.6;
+            letter-spacing: 0.01em;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 清新的浮动装饰元素 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -10%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -10%;
+            left: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-30px, -30px) scale(1.1); }
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background: var(--card-bg);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-colorful);
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
+            z-index: 1;
+            border: 2px solid var(--border-color);
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-rainbow);
+            animation: rainbowShift 3s ease-in-out infinite;
+        }
+
+        @keyframes rainbowShift {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         .home-button {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             color: white;
             border: none;
             border-radius: var(--radius-md);
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 1.25rem;
             font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-soft);
             display: flex;
             align-items: center;
             gap: 0.5rem;
             text-decoration: none;
             z-index: 1000;
+            letter-spacing: 0.02em;
         }
 
         .home-button:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-            background: linear-gradient(135deg, var(--primary-dark), var(--secondary-color));
+            box-shadow: var(--shadow-medium);
         }
 
         .home-button:active {
@@ -93,55 +167,66 @@
         }
 
         .header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background-color: #06b6d4; /* 回退背景色 */
+            background: var(--gradient-cyan);
             color: white;
-            padding: 1.25rem;
+            padding: 3rem 2rem 2.5rem;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
 
+        /* 可爱的波浪装饰 */
         .header::before {
             content: '';
             position: absolute;
-            top: 0;
+            bottom: -2px;
             left: 0;
             right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            pointer-events: none;
+            height: 60px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="white" opacity="0.3"/></svg>') repeat-x;
+            background-size: 1200px 60px;
+            animation: wave 10s linear infinite;
+        }
+
+        @keyframes wave {
+            0% { background-position: 0 0; }
+            100% { background-position: 1200px 0; }
         }
 
         .header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 1rem;
+            letter-spacing: 0.02em;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 1rem;
             position: relative;
             z-index: 1;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .header h1 i {
-            font-size: 1.75rem;
-            animation: pulse 2s infinite;
+            font-size: 2.25rem;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         .header p {
-            font-size: 1rem;
+            font-size: 1.125rem;
             opacity: 0.95;
-            font-weight: 400;
+            font-weight: 500;
+            letter-spacing: 0.03em;
             position: relative;
             z-index: 1;
             margin: 0;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
         }
 
         .drag-area {
@@ -185,11 +270,11 @@
         }
 
         .drag-item {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             border-radius: var(--radius-md);
             cursor: grab;
             font-weight: 600;
-            font-size: 0.8125rem;
+            font-size: 0.9375rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: var(--shadow-md);
             user-select: none;
@@ -197,11 +282,11 @@
             overflow: hidden;
             display: flex;
             align-items: center;
-            gap: 0.375rem;
-            border: 2px solid transparent;
-            background: linear-gradient(135deg, var(--info-color), #2563eb);
+            gap: 0.5rem;
+            border: 2px solid var(--info-color);
+            background-color: #8b5cf6; /* 回退背景色 */
+            background: var(--gradient-purple);
             color: white;
-            border-color: var(--info-color);
         }
 
         .drag-item::before {
@@ -212,7 +297,7 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.5s;
+            transition: left 0.6s;
         }
 
         .drag-item:hover::before {
@@ -220,13 +305,13 @@
         }
 
         .drag-item:hover {
-            transform: translateY(-3px);
+            transform: translateY(-4px) scale(1.05);
             box-shadow: var(--shadow-lg);
         }
 
         .drag-item:active {
             cursor: grabbing;
-            transform: scale(0.95);
+            transform: scale(0.98);
         }
 
         /* 休息人员区域样式 */
@@ -260,6 +345,7 @@
             align-items: center;
             gap: 0.375rem;
             border: 2px solid transparent;
+            background-color: #6b7280; /* 回退背景色 */
             background: linear-gradient(135deg, #9ca3af, #6b7280);
             color: white;
             border-color: #9ca3af;
@@ -355,53 +441,62 @@
 
         .cleaning-table {
             width: 100%;
-            border-collapse: collapse;
-            background: var(--card-bg);
+            border-collapse: separate;
+            border-spacing: 0.75rem;
+            background: transparent;
             border-radius: var(--radius-lg);
             overflow: hidden;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--border-color);
         }
 
         .cleaning-table th {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background-color: #8b5cf6; /* 回退背景色 */
+            background: var(--gradient-purple);
             color: white;
-            padding: 0.75rem 0.5rem;
+            padding: 1.25rem 1rem;
             text-align: center;
-            font-weight: 600;
-            font-size: 0.8125rem;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.03em;
             position: relative;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
         }
 
         .cleaning-table th:first-child {
-            background: linear-gradient(135deg, var(--text-primary) 0%, #374151 100%);
+            background-color: #06b6d4; /* 回退背景色 */
+            background: var(--gradient-cyan);
+            box-shadow: var(--shadow-md);
         }
 
         .cleaning-table td {
-            border: 1px solid #e2e8f0;
-            padding: 0.5rem;
+            border: none;
+            padding: 0.75rem;
             text-align: center;
             min-height: 4rem;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-            background: #ffffff;
+            background: white;
             vertical-align: middle;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
         }
 
         .cleaning-table td:hover {
-            background: #f7fafc;
-            border-color: var(--primary-color);
+            background: var(--card-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
 
         .task-name {
-            background: linear-gradient(135deg, var(--light-bg), #f1f5f9);
-            font-weight: 600;
-            color: var(--text-primary);
-            border-right: 3px solid var(--primary-color) !important;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.1));
+            font-weight: 700;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: var(--radius-md);
             position: sticky;
             left: 0;
             z-index: 10;
+            box-shadow: var(--shadow-md);
         }
 
         .cleaning-cell {
@@ -413,31 +508,38 @@
             justify-content: center;
             font-weight: 500;
             font-size: 0.875rem;
-            border-radius: var(--radius-sm);
+            border-radius: var(--radius-md);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            background: #fafbfc;
-            border: 1px solid #e1e5e9;
-            padding: 0.75rem 0.5rem;
+            background: #fafafa;
+            border: 2px dashed var(--border-color);
+            padding: 0.875rem 0.625rem;
         }
 
         .cleaning-cell:hover {
-            background-color: #f0f4f8;
-            transform: scale(1.02);
-            box-shadow: var(--shadow-sm);
+            background: var(--hover-bg);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-md);
             border-color: var(--primary-color);
         }
 
         .cleaning-cell.drag-over {
-            background-color: #e3f2fd;
-            border: 2px dashed var(--info-color);
-            transform: scale(1.05);
-            box-shadow: var(--shadow-md);
+            background: rgba(255, 165, 0, 0.15);
+            border: 2px dashed var(--accent-color);
+            transform: scale(1.08);
+            box-shadow: var(--shadow-lg);
+            animation: wiggle 0.5s ease-in-out infinite;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: scale(1.08) rotate(0deg); }
+            25% { transform: scale(1.08) rotate(-2deg); }
+            75% { transform: scale(1.08) rotate(2deg); }
         }
 
         .cleaning-cell.assigned {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.15));
             color: var(--text-primary);
             box-shadow: var(--shadow-md);
             position: relative;
@@ -451,8 +553,8 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--success-color), #059669);
+            height: 4px;
+            background: var(--gradient-purple);
         }
 
         .cleaning-cell.assigned:hover::after {
@@ -489,20 +591,29 @@
         .employee-name-text {
             font-size: 1rem;
             font-weight: 700;
-            color: #1a365d;
-            background: linear-gradient(135deg, #4299e1, #3182ce);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--primary-color);
             text-align: center;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.375rem;
-            padding: 0.375rem 0.75rem;
-            background-color: rgba(66, 153, 225, 0.1);
-            border-radius: 6px;
-            border: 1px solid rgba(66, 153, 225, 0.3);
+            padding: 0.625rem 1rem;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            box-shadow: var(--shadow-md);
+            animation: gentlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes gentlePulse {
+            0%, 100% {
+                box-shadow: var(--shadow-md);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: var(--shadow-lg);
+                transform: scale(1.02);
+            }
         }
 
         /* 拖拽提示样式 */
@@ -529,21 +640,22 @@
         }
 
         .action-btn {
-            padding: 0.75rem 1.5rem;
+            padding: 1rem 2rem;
             border: none;
             border-radius: var(--radius-md);
-            font-size: 0.875rem;
-            font-weight: 600;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             box-shadow: var(--shadow-md);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
             position: relative;
             overflow: hidden;
-            min-width: 140px;
+            min-width: 180px;
             justify-content: center;
+            letter-spacing: 0.02em;
         }
 
         .action-btn::before {
@@ -553,8 +665,8 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
         }
 
         .action-btn:hover::before {
@@ -562,31 +674,35 @@
         }
 
         .action-btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-4px) scale(1.03);
             box-shadow: var(--shadow-lg);
         }
 
         .action-btn:active {
-            transform: translateY(0);
+            transform: translateY(0) scale(0.98);
         }
 
         .clear-btn {
-            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            background-color: #ef4444; /* 回退背景色 */
+            background: linear-gradient(135deg, var(--danger-color), #ff6b81);
             color: white;
         }
 
         .export-btn {
-            background: linear-gradient(135deg, var(--info-color), #2563eb);
+            background-color: #8b5cf6; /* 回退背景色 */
+            background: var(--gradient-purple);
             color: white;
         }
 
         .save-btn {
-            background: linear-gradient(135deg, var(--success-color), #059669);
+            background-color: #10b981; /* 回退背景色 */
+            background: linear-gradient(135deg, var(--success-color), #34d399);
             color: white;
         }
 
         .random-btn {
-            background: linear-gradient(135deg, var(--warning-color), #d97706);
+            background-color: #06b6d4; /* 回退背景色 */
+            background: var(--gradient-cyan);
             color: white;
         }
 
@@ -833,6 +949,10 @@
                 <button class="action-btn save-btn" onclick="saveAssignments()">
                     <i class="fas fa-save"></i>
                     <span>保存分配</span>
+                </button>
+                <button class="action-btn" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white;" onclick="copyTableScreenshot()">
+                    <i class="fas fa-camera"></i>
+                    <span>复制表格截图</span>
                 </button>
             </div>
         </div>
@@ -1553,6 +1673,97 @@
 
             XLSX.writeFile(wb, "公司大扫除安排表.xlsx");
             showSuccessMessage('Excel文件导出成功！（包含休息人员和统计信息）');
+        }
+
+        // 检测是否在Tauri环境中运行
+        function isTauriEnvironment() {
+            return typeof window !== 'undefined' &&
+                   typeof window.__TAURI__ !== 'undefined' &&
+                   typeof window.__TAURI__.core !== 'undefined';
+        }
+
+        // 下载图片作为降级方案
+        function downloadImage(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // 复制表格截图到剪切板
+        async function copyTableScreenshot() {
+            try {
+                // 获取表格区域元素
+                const tableArea = document.querySelector('.table-area');
+
+                if (!tableArea) {
+                    alert('未找到表格区域');
+                    return;
+                }
+
+                // 显示加载提示
+                const button = event.target.closest('.action-btn');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>截图中...</span>';
+                button.disabled = true;
+
+                // 检测运行环境
+                const isTauri = isTauriEnvironment();
+                console.log('🔍 [截图] 环境检测:', isTauri ? 'Tauri桌面应用' : '浏览器');
+
+                // 使用html2canvas截图
+                const canvas = await html2canvas(tableArea, {
+                    backgroundColor: '#ffffff',
+                    scale: 2, // 提高清晰度
+                    logging: false,
+                    useCORS: true
+                });
+
+                // 将canvas转换为blob
+                canvas.toBlob(async (blob) => {
+                    try {
+                        // 尝试使用Clipboard API复制到剪切板
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                'image/png': blob
+                            })
+                        ]);
+
+                        // 恢复按钮状态
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+
+                        // 显示成功提示
+                        console.log('✅ [剪切板] 图片复制成功');
+                        showSuccessMessage('表格截图已复制到剪切板！可以直接粘贴到微信、QQ等应用中');
+                    } catch (err) {
+                        console.error('⚠️ [剪切板] 复制失败，使用降级方案:', err.message);
+
+                        // 降级方案：下载图片
+                        const filename = `大扫除安排表_${new Date().toISOString().slice(0,10)}.png`;
+                        downloadImage(canvas, filename);
+
+                        // 恢复按钮状态
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+
+                        // 显示降级提示
+                        if (isTauri) {
+                            showSuccessMessage('Tauri环境下已自动下载图片！请在下载文件夹中查看');
+                        } else {
+                            showSuccessMessage('已自动下载图片！请在下载文件夹中查看');
+                        }
+                    }
+                }, 'image/png');
+
+            } catch (error) {
+                console.error('❌ [截图] 截图失败:', error);
+                alert('截图失败：' + error.message);
+                // 恢复按钮状态
+                const button = event.target.closest('.action-btn');
+                button.innerHTML = '<i class="fas fa-camera"></i><span>复制表格截图</span>';
+                button.disabled = false;
+            }
         }
 
         // 保存分配

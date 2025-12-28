@@ -7,9 +7,11 @@
     <!-- Font Awesome 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <!-- SheetJS Excel导出库 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- html2canvas 截图库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
 
         * {
@@ -19,73 +21,100 @@
         }
 
         :root {
-            --primary-color: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary-color: #8b5cf6;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --info-color: #3b82f6;
-            --light-bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --border-color: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-            --radius-sm: 0.375rem;
+            /* 日式简约色彩系统 */
+            --primary-color: #2D5016;
+            --primary-light: #4A7C2C;
+            --primary-dark: #1F3810;
+            --accent-color: #E8956C;
+            --accent-light: #F4B89A;
+            --success-color: #4A7C2C;
+            --warning-color: #E8956C;
+            --danger-color: #C84B31;
+            --info-color: #5B8A72;
+            --bg-cream: #FAF8F3;
+            --bg-warm: #F5F1E8;
+            --light-bg: #F5F1E8;
+            --card-bg: #FFFFFF;
+            --text-primary: #2C2C2C;
+            --text-secondary: #6B6B6B;
+            --text-tertiary: #9B9B9B;
+            --border-color: #E8E4DC;
+            --border-subtle: #E8E4DC;
+            --shadow-soft: 0 2px 8px rgba(45, 80, 22, 0.04);
+            --shadow-sm: 0 2px 8px rgba(45, 80, 22, 0.04);
+            --shadow-md: 0 4px 16px rgba(45, 80, 22, 0.08);
+            --shadow-medium: 0 4px 16px rgba(45, 80, 22, 0.08);
+            --shadow-lg: 0 8px 32px rgba(45, 80, 22, 0.12);
+            --shadow-strong: 0 8px 32px rgba(45, 80, 22, 0.12);
+            --shadow-xl: 0 12px 48px rgba(45, 80, 22, 0.16);
+            --radius-sm: 0.25rem;
             --radius-md: 0.5rem;
-            --radius-lg: 0.75rem;
-            --radius-xl: 1rem;
+            --radius-lg: 1rem;
+            --radius-xl: 1.5rem;
         }
 
         body {
-            font-family: 'Noto Sans SC', 'Inter', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Noto Sans SC', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-cream) 0%, var(--bg-warm) 100%);
             min-height: 100vh;
             padding: 0.75rem;
             color: var(--text-primary);
-            line-height: 1.5;
+            line-height: 1.75;
+            letter-spacing: 0.01em;
+            position: relative;
+        }
+
+        /* 背景纹理 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(232, 149, 108, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(45, 80, 22, 0.02) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background: var(--card-bg);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-strong);
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
+            z-index: 1;
         }
 
         .home-button {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             color: white;
             border: none;
             border-radius: var(--radius-md);
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 1.25rem;
             font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-md);
+            box-shadow: var(--shadow-soft);
             display: flex;
             align-items: center;
             gap: 0.5rem;
             text-decoration: none;
             z-index: 1000;
+            letter-spacing: 0.02em;
         }
 
         .home-button:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-            background: linear-gradient(135deg, var(--primary-dark), var(--secondary-color));
+            box-shadow: var(--shadow-medium);
         }
 
         .home-button:active {
@@ -93,14 +122,15 @@
         }
 
         .header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
             color: white;
-            padding: 1.25rem;
+            padding: 2rem 1.25rem 1.5rem;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
 
+        /* 头部装饰纹理 */
         .header::before {
             content: '';
             position: absolute;
@@ -108,15 +138,23 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            background-image:
+                linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%);
+            background-size: 60px 60px;
+            background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
+            opacity: 0.5;
             pointer-events: none;
         }
 
         .header h1 {
+            font-family: 'Noto Serif SC', serif;
             font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.02em;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -127,21 +165,17 @@
 
         .header h1 i {
             font-size: 1.75rem;
-            animation: pulse 2s infinite;
+            opacity: 0.9;
         }
 
         .header p {
             font-size: 1rem;
-            opacity: 0.95;
+            opacity: 0.92;
             font-weight: 400;
+            letter-spacing: 0.03em;
             position: relative;
             z-index: 1;
             margin: 0;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
         }
 
         .drag-area {
@@ -152,10 +186,12 @@
 
         .drag-title {
             text-align: center;
+            font-family: 'Noto Serif SC', serif;
             font-size: 1.125rem;
             color: var(--text-primary);
             margin-bottom: 1rem;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 0.02em;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -163,7 +199,7 @@
         }
 
         .drag-title i {
-            color: var(--primary-color);
+            color: var(--accent-color);
         }
 
         .drag-items {
@@ -242,18 +278,18 @@
         }
 
         .schedule-table th {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
             color: white;
-            padding: 0.75rem 0.5rem;
+            padding: 0.875rem 0.5rem;
             text-align: center;
-            font-weight: 600;
-            font-size: 0.8125rem;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            font-weight: 700;
+            font-size: 0.875rem;
+            letter-spacing: 0.02em;
             position: relative;
         }
 
         .schedule-table th:first-child {
-            background: linear-gradient(135deg, var(--text-primary) 0%, #374151 100%);
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
         }
 
         .schedule-table td {
@@ -471,7 +507,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(45, 80, 22, 0.1), transparent);
             transition: left 0.5s;
         }
 
@@ -481,13 +517,13 @@
 
         .day-checkbox:hover {
             border-color: var(--primary-color);
-            background: #f8faff;
+            background: rgba(250, 248, 243, 0.5);
             transform: translateY(-1px);
             box-shadow: var(--shadow-sm);
         }
 
         .day-checkbox.selected {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             color: white;
             border-color: var(--primary-color);
             box-shadow: var(--shadow-md);
@@ -499,7 +535,7 @@
 
         .random-btn {
             padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, var(--success-color), #059669);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             color: white;
             border: none;
             border-radius: var(--radius-md);
@@ -513,6 +549,7 @@
             gap: 0.375rem;
             position: relative;
             overflow: hidden;
+            letter-spacing: 0.02em;
         }
 
         .random-btn::before {
@@ -895,7 +932,7 @@
                         <i class="fas fa-users"></i>
                         运营组
                     </div>
-                    <div class="group-members">王郡江、杨有淇、张玉莲、王涛、王清月</div>
+                    <div class="group-members">王郡江、杨有淇、张玉莲、王涛、王清月、袁丽妮</div>
                 </div>
                 <div class="group-card">
                     <div class="group-title">
@@ -949,6 +986,10 @@
                 <button class="action-btn save-btn" onclick="saveSchedule()">
                     <i class="fas fa-save"></i>
                     <span>保存排班</span>
+                </button>
+                <button class="action-btn" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white;" onclick="copyTableScreenshot()">
+                    <i class="fas fa-camera"></i>
+                    <span>复制表格截图</span>
                 </button>
             </div>
         </div>
@@ -1561,6 +1602,97 @@
             } catch (error) {
                 console.error('保存失败:', error);
                 alert('保存失败，请检查浏览器是否支持本地存储。');
+            }
+        }
+
+        // 检测是否在Tauri环境中运行
+        function isTauriEnvironment() {
+            return typeof window !== 'undefined' &&
+                   typeof window.__TAURI__ !== 'undefined' &&
+                   typeof window.__TAURI__.core !== 'undefined';
+        }
+
+        // 下载图片作为降级方案
+        function downloadImage(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // 复制表格截图到剪切板
+        async function copyTableScreenshot() {
+            try {
+                // 获取排班表区域元素
+                const scheduleArea = document.querySelector('.schedule-area');
+
+                if (!scheduleArea) {
+                    alert('未找到排班表区域');
+                    return;
+                }
+
+                // 显示加载提示
+                const button = event.target.closest('.action-btn');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>截图中...</span>';
+                button.disabled = true;
+
+                // 检测运行环境
+                const isTauri = isTauriEnvironment();
+                console.log('🔍 [截图] 环境检测:', isTauri ? 'Tauri桌面应用' : '浏览器');
+
+                // 使用html2canvas截图
+                const canvas = await html2canvas(scheduleArea, {
+                    backgroundColor: '#ffffff',
+                    scale: 2, // 提高清晰度
+                    logging: false,
+                    useCORS: true
+                });
+
+                // 将canvas转换为blob
+                canvas.toBlob(async (blob) => {
+                    try {
+                        // 尝试使用Clipboard API复制到剪切板
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                'image/png': blob
+                            })
+                        ]);
+
+                        // 恢复按钮状态
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+
+                        // 显示成功提示
+                        console.log('✅ [剪切板] 图片复制成功');
+                        showActionMessage('action-btn', '<i class="fas fa-check"></i> 截图已复制', '#06b6d4');
+                    } catch (err) {
+                        console.error('⚠️ [剪切板] 复制失败，使用降级方案:', err.message);
+
+                        // 降级方案：下载图片
+                        const filename = `排班表_${new Date().toISOString().slice(0,10)}.png`;
+                        downloadImage(canvas, filename);
+
+                        // 恢复按钮状态
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+
+                        // 显示降级提示
+                        if (isTauri) {
+                            showActionMessage('action-btn', '<i class="fas fa-download"></i> Tauri环境已下载', '#10b981');
+                        } else {
+                            showActionMessage('action-btn', '<i class="fas fa-download"></i> 已下载图片', '#10b981');
+                        }
+                    }
+                }, 'image/png');
+
+            } catch (error) {
+                console.error('❌ [截图] 截图失败:', error);
+                alert('截图失败：' + error.message);
+                // 恢复按钮状态
+                const button = event.target.closest('.action-btn');
+                button.innerHTML = '<i class="fas fa-camera"></i><span>复制表格截图</span>';
+                button.disabled = false;
             }
         }
 
