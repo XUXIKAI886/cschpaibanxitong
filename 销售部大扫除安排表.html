@@ -1700,12 +1700,10 @@
                 const arrayBuffer = await blob.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
 
-                // 尝试使用Tauri的clipboard API
-                if (window.__TAURI__ && window.__TAURI__.core) {
-                    // 尝试调用Tauri的clipboard插件
-                    await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image', {
-                        image: Array.from(uint8Array)
-                    });
+                // 使用Tauri 2.x的正确API
+                if (window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__) {
+                    // 调用Tauri剪切板插件的writeImage方法
+                    await window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__.writeImage(uint8Array);
                     console.log('✅ [Tauri] 使用原生API复制图片成功');
                     return true;
                 }
