@@ -1693,13 +1693,6 @@
         // 使用Tauri API复制图片到剪切板
         async function copyImageWithTauri(canvas) {
             try {
-                // 将canvas转换为blob
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-
-                // 将blob转换为Uint8Array
-                const arrayBuffer = await blob.arrayBuffer();
-                const uint8Array = new Uint8Array(arrayBuffer);
-
                 // 诊断：检查Tauri插件是否存在
                 console.log('🔍 [诊断] window.__TAURI__:', typeof window.__TAURI__);
                 console.log('🔍 [诊断] window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__:', typeof window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__);
@@ -1717,19 +1710,36 @@
                     writeImageFunc = window.__TAURI__.clipboard.writeImage;
                     console.log('✅ [Tauri] 找到插件方法2');
                 }
-                // 方法3: 通过invoke调用
-                else if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
-                    console.log('✅ [Tauri] 使用invoke方法');
-                    await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image', {
-                        image: Array.from(uint8Array)
-                    });
-                    console.log('✅ [Tauri] 使用invoke方法复制成功');
+
+                if (writeImageFunc) {
+                    // 关键修复：获取RGBA格式的像素数据
+                    const ctx = canvas.getContext('2d');
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // imageData.data 就是 Uint8ClampedArray 格式的RGBA数据
+                    // 转换为普通的Uint8Array
+                    const rgbaData = new Uint8Array(imageData.data);
+
+                    console.log('📊 [Tauri] 图片尺寸:', canvas.width, 'x', canvas.height);
+                    console.log('📊 [Tauri] RGBA数据长度:', rgbaData.length);
+
+                    // 调用Tauri API，传递RGBA数据
+                    await writeImageFunc(rgbaData);
+                    console.log('✅ [Tauri] 使用原生API复制图片成功');
                     return true;
                 }
 
-                if (writeImageFunc) {
-                    await writeImageFunc(uint8Array);
-                    console.log('✅ [Tauri] 使用原生API复制图片成功');
+                // 方法3: 通过invoke调用（降级方案）
+                if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+                    console.log('✅ [Tauri] 使用invoke方法');
+                    const ctx = canvas.getContext('2d');
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const rgbaData = new Uint8Array(imageData.data);
+
+                    await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image', {
+                        image: Array.from(rgbaData)
+                    });
+                    console.log('✅ [Tauri] 使用invoke方法复制成功');
                     return true;
                 }
 
