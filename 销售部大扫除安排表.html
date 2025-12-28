@@ -1690,6 +1690,32 @@
             link.click();
         }
 
+        // 使用Tauri API复制图片到剪切板
+        async function copyImageWithTauri(canvas) {
+            try {
+                // 将canvas转换为blob
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+                // 将blob转换为Uint8Array
+                const arrayBuffer = await blob.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+
+                // 尝试使用Tauri的clipboard API
+                if (window.__TAURI__ && window.__TAURI__.core) {
+                    // 尝试调用Tauri的clipboard插件
+                    await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image', {
+                        image: Array.from(uint8Array)
+                    });
+                    console.log('✅ [Tauri] 使用原生API复制图片成功');
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('⚠️ [Tauri] 原生API复制失败:', error.message);
+                return false;
+            }
+        }
+
         // 复制表格截图到剪切板
         async function copyTableScreenshot() {
             try {
@@ -1714,42 +1740,50 @@
                 // 使用html2canvas截图
                 const canvas = await html2canvas(tableArea, {
                     backgroundColor: '#ffffff',
-                    scale: 2, // 提高清晰度
+                    scale: 2,
                     logging: false,
                     useCORS: true
                 });
 
-                // 将canvas转换为blob
-                canvas.toBlob(async (blob) => {
-                    try {
-                        // 尝试使用Clipboard API复制到剪切板
-                        await navigator.clipboard.write([
-                            new ClipboardItem({
-                                'image/png': blob
-                            })
-                        ]);
+                let copySuccess = false;
 
-                        // 恢复按钮状态
+                // 策略1: 如果是Tauri环境，优先尝试使用Tauri原生API
+                if (isTauri) {
+                    console.log('📋 [Tauri] 尝试使用原生API复制图片...');
+                    copySuccess = await copyImageWithTauri(canvas);
+
+                    if (copySuccess) {
                         button.innerHTML = originalText;
                         button.disabled = false;
+                        showSuccessMessage('✅ 使用Tauri原生API复制成功！可以直接粘贴');
+                        return;
+                    }
+                }
 
-                        // 显示成功提示
+                // 策略2: 尝试使用浏览器Clipboard API
+                console.log('📋 [浏览器] 尝试使用Clipboard API...');
+                canvas.toBlob(async (blob) => {
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({'image/png': blob})
+                        ]);
+
+                        button.innerHTML = originalText;
+                        button.disabled = false;
                         console.log('✅ [剪切板] 图片复制成功');
                         showSuccessMessage('表格截图已复制到剪切板！可以直接粘贴到微信、QQ等应用中');
                     } catch (err) {
                         console.error('⚠️ [剪切板] 复制失败，使用降级方案:', err.message);
 
-                        // 降级方案：下载图片
+                        // 策略3: 降级方案 - 下载图片
                         const filename = `大扫除安排表_${new Date().toISOString().slice(0,10)}.png`;
                         downloadImage(canvas, filename);
 
-                        // 恢复按钮状态
                         button.innerHTML = originalText;
                         button.disabled = false;
 
-                        // 显示降级提示
                         if (isTauri) {
-                            showSuccessMessage('Tauri环境下已自动下载图片！请在下载文件夹中查看');
+                            showSuccessMessage('已自动下载图片到本地！请在下载文件夹中查看');
                         } else {
                             showSuccessMessage('已自动下载图片！请在下载文件夹中查看');
                         }
@@ -1759,7 +1793,6 @@
             } catch (error) {
                 console.error('❌ [截图] 截图失败:', error);
                 alert('截图失败：' + error.message);
-                // 恢复按钮状态
                 const button = event.target.closest('.action-btn');
                 button.innerHTML = '<i class="fas fa-camera"></i><span>复制表格截图</span>';
                 button.disabled = false;
