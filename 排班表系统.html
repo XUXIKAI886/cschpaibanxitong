@@ -178,6 +178,55 @@
             margin: 0;
         }
 
+        .handover-area {
+            padding: 1rem 1.25rem;
+            background: var(--light-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .handover-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1rem 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .handover-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .handover-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .handover-item {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            background: var(--bg-warm);
+            border-radius: var(--radius-sm);
+            padding: 0.4rem 0.6rem;
+        }
+
+        .handover-note {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-align: center;
+        }
+
         .drag-area {
             padding: 1.25rem;
             background: var(--light-bg);
@@ -861,6 +910,17 @@
                 呈尚策划公司 - 运营部智能排班系统
             </h1>
             <p>运营部可拖拽排班表系统（6人）</p>
+        </div>
+
+        <div class="handover-area">
+            <div class="handover-card">
+                <div class="handover-title">
+                    <i class="fas fa-handshake"></i>
+                    调休期间工作对接
+                </div>
+                <div class="handover-list" id="handoverRuleList"></div>
+                <div class="handover-note">如遇特殊情况，将提前调整对接安排，非固定不变。</div>
+            </div>
         </div>
 
         <!-- 拖拽标签区域 -->
@@ -1859,6 +1919,7 @@
             initContextMenu();
             initDaySelector();
             updateRandomButtonState();
+            renderHandoverRules();
 
             // 添加一些提示信息
             console.log('🎉 智能排班系统已加载完成！');
