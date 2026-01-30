@@ -936,8 +936,13 @@
                     <i class="fas fa-handshake"></i>
                     调休期间工作对接
                 </div>
-                <div class="handover-list" id="handoverRuleList"></div>
-                <div class="handover-note">如遇特殊情况，将提前调整对接安排，非固定不变。</div>
+                <div class="handover-list">
+                    <div class="handover-item">对接信息显示在上班单元格</div>
+                    <div class="handover-item">按当天排班随机均分分配</div>
+                    <div class="handover-item">每个上班人员必须对应一个休息人员（可重复）</div>
+                    <div class="handover-item">无休息人员时显示“对接：无休息人员”</div>
+                </div>
+                <div class="handover-note">如遇特殊情况，将提前调整对接安排。</div>
             </div>
         </div>
 
@@ -1095,34 +1100,10 @@
         const operationGroup = ['王郡江', '杨有淇', '张玉莲', '王涛', '王清月', '袁丽妮']; // 运营组6人（彭润梅已离职）
         const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'];
 
-        const handoverMap = {
-            '王涛': '王郡江',
-            '王清月': '杨有淇',
-            '袁丽妮': '张玉莲'
-        };
-
-        function getHandoverText(employeeName) {
-            const partner = handoverMap[employeeName];
-            return partner ? `对接：${partner}` : '对接：无固定安排';
-        }
-
         function getEmployeeNameByCell(cell) {
             const row = cell ? cell.closest('tr') : null;
             const nameCell = row ? row.querySelector('.employee-name') : null;
             return nameCell ? nameCell.textContent.trim() : '';
-        }
-
-        function renderHandoverRules() {
-            const list = document.getElementById('handoverRuleList');
-            if (!list) {
-                return;
-            }
-            const items = Object.entries(handoverMap)
-                .map(([restEmployee, partner]) => (
-                    `<div class="handover-item"><span>${restEmployee} 休息</span><span>→</span><span>${partner} 对接</span></div>`
-                ))
-                .join('');
-            list.innerHTML = items;
         }
 
         
@@ -1255,13 +1236,8 @@
                 cell.classList.add('work-assigned', 'assigned');
                 cell.innerHTML = '<div class="schedule-status"><i class="fas fa-briefcase"></i> 上班</div>';
             } else if (type === 'rest') {
-                const employeeName = getEmployeeNameByCell(cell);
-                const handoverText = getHandoverText(employeeName);
-                cell.classList.add('rest-assigned', 'assigned', 'handover-assigned');
-                cell.innerHTML = `
-                    <div class="schedule-status"><i class="fas fa-bed"></i> 休息</div>
-                    <div class="handover-text">${handoverText}</div>
-                `;
+                cell.classList.add('rest-assigned', 'assigned');
+                cell.innerHTML = '<div class="schedule-status"><i class="fas fa-bed"></i> 休息</div>';
             } else if (type === 'clear') {
                 cell.textContent = '点击或拖拽安排';
             }
@@ -1942,7 +1918,6 @@
             initContextMenu();
             initDaySelector();
             updateRandomButtonState();
-            renderHandoverRules();
 
             // 添加一些提示信息
             console.log('🎉 智能排班系统已加载完成！');
