@@ -395,6 +395,7 @@
             font-weight: 500;
             color: rgba(255, 255, 255, 0.85);
             text-align: center;
+            line-height: 1.2;
         }
 
         .schedule-cell::before {
@@ -1106,6 +1107,89 @@
             return nameCell ? nameCell.textContent.trim() : '';
         }
 
+        function shuffleArray(list) {
+            const array = [...list];
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function updateHandoverAssignments() {
+            const scheduleRows = document.querySelectorAll('#scheduleBody tr');
+            const dayCount = 7;
+
+            for (let day = 0; day < dayCount; day++) {
+                const workCells = [];
+                const restNames = [];
+
+                scheduleRows.forEach(row => {
+                    const cell = row.children[day + 1];
+                    if (!cell) {
+                        return;
+                    }
+                    const scheduleCell = cell.querySelector('.schedule-cell');
+                    if (!scheduleCell) {
+                        return;
+                    }
+
+                    const employeeName = getEmployeeNameByCell(scheduleCell);
+
+                    if (scheduleCell.classList.contains('work-assigned')) {
+                        workCells.push({ cell: scheduleCell, name: employeeName });
+                    } else if (scheduleCell.classList.contains('rest-assigned')) {
+                        restNames.push(employeeName);
+                    }
+                });
+
+                if (workCells.length === 0) {
+                    continue;
+                }
+
+                if (restNames.length === 0) {
+                    workCells.forEach(item => {
+                        const textNode = item.cell.querySelector('.handover-text');
+                        if (textNode) {
+                            textNode.textContent = '对接：无休息人员';
+                        }
+                    });
+                    continue;
+                }
+
+                const shuffledRest = shuffleArray(restNames);
+                const shuffledWork = shuffleArray(workCells);
+                const assignments = new Map();
+
+                workCells.forEach(item => assignments.set(item.cell, []));
+
+                if (shuffledRest.length >= shuffledWork.length) {
+                    shuffledRest.forEach((restName, index) => {
+                        const target = shuffledWork[index % shuffledWork.length];
+                        assignments.get(target.cell).push(restName);
+                    });
+                } else {
+                    shuffledWork.forEach((workItem, index) => {
+                        const restName = shuffledRest[index % shuffledRest.length];
+                        assignments.get(workItem.cell).push(restName);
+                    });
+                }
+
+                workCells.forEach(item => {
+                    const names = assignments.get(item.cell) || [];
+                    const textNode = item.cell.querySelector('.handover-text');
+                    if (!textNode) {
+                        return;
+                    }
+                    if (names.length === 0) {
+                        textNode.textContent = '对接：无休息人员';
+                    } else {
+                        textNode.textContent = `对接：${names.join('、')}`;
+                    }
+                });
+            }
+        }
+
         
         // 初始化排班表
         function initScheduleTable() {
@@ -1233,8 +1317,11 @@
 
             // 根据类型设置新状态
             if (type === 'work') {
-                cell.classList.add('work-assigned', 'assigned');
-                cell.innerHTML = '<div class="schedule-status"><i class="fas fa-briefcase"></i> 上班</div>';
+                cell.classList.add('work-assigned', 'assigned', 'handover-assigned');
+                cell.innerHTML = `
+                    <div class="schedule-status"><i class="fas fa-briefcase"></i> 上班</div>
+                    <div class="handover-text">对接：待分配</div>
+                `;
             } else if (type === 'rest') {
                 cell.classList.add('rest-assigned', 'assigned');
                 cell.innerHTML = '<div class="schedule-status"><i class="fas fa-bed"></i> 休息</div>';
@@ -1247,6 +1334,8 @@
             setTimeout(() => {
                 cell.style.transform = 'scale(1)';
             }, 200);
+
+            updateHandoverAssignments();
         }
 
         // 双击删除功能
