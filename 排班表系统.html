@@ -379,6 +379,24 @@
             overflow: hidden;
         }
 
+        .schedule-cell.handover-assigned {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .schedule-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .handover-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.85);
+            text-align: center;
+        }
+
         .schedule-cell::before {
             content: '';
             position: absolute;
@@ -1230,15 +1248,20 @@
         // 设置排班状态的通用函数
         function setScheduleStatus(cell, type) {
             // 清除之前的状态
-            cell.classList.remove('work-assigned', 'rest-assigned', 'assigned');
+            cell.classList.remove('work-assigned', 'rest-assigned', 'assigned', 'handover-assigned');
 
             // 根据类型设置新状态
             if (type === 'work') {
                 cell.classList.add('work-assigned', 'assigned');
-                cell.innerHTML = '<i class="fas fa-briefcase"></i> 上班';
+                cell.innerHTML = '<div class="schedule-status"><i class="fas fa-briefcase"></i> 上班</div>';
             } else if (type === 'rest') {
-                cell.classList.add('rest-assigned', 'assigned');
-                cell.innerHTML = '<i class="fas fa-bed"></i> 休息';
+                const employeeName = getEmployeeNameByCell(cell);
+                const handoverText = getHandoverText(employeeName);
+                cell.classList.add('rest-assigned', 'assigned', 'handover-assigned');
+                cell.innerHTML = `
+                    <div class="schedule-status"><i class="fas fa-bed"></i> 休息</div>
+                    <div class="handover-text">${handoverText}</div>
+                `;
             } else if (type === 'clear') {
                 cell.textContent = '点击或拖拽安排';
             }
