@@ -1017,6 +1017,35 @@
         const operationGroup = ['王郡江', '杨有淇', '张玉莲', '王涛', '王清月', '袁丽妮']; // 运营组6人（彭润梅已离职）
         const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'];
 
+        const handoverMap = {
+            '王涛': '王郡江',
+            '王清月': '杨有淇',
+            '袁丽妮': '张玉莲'
+        };
+
+        function getHandoverText(employeeName) {
+            const partner = handoverMap[employeeName];
+            return partner ? `对接：${partner}` : '对接：无固定安排';
+        }
+
+        function getEmployeeNameByCell(cell) {
+            const row = cell ? cell.closest('tr') : null;
+            const nameCell = row ? row.querySelector('.employee-name') : null;
+            return nameCell ? nameCell.textContent.trim() : '';
+        }
+
+        function renderHandoverRules() {
+            const list = document.getElementById('handoverRuleList');
+            if (!list) {
+                return;
+            }
+            const items = Object.entries(handoverMap)
+                .map(([restEmployee, partner]) => (
+                    `<div class="handover-item"><span>${restEmployee} 休息</span><span>→</span><span>${partner} 对接</span></div>`
+                ))
+                .join('');
+            list.innerHTML = items;
+        }
 
         
         // 初始化排班表
