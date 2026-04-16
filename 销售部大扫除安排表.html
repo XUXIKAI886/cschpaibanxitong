@@ -511,11 +511,11 @@
       <div class="hero-icon">🧹</div>
       <div class="hero-company">呈尚策划公司</div>
       <h1 class="hero-title">大扫除安排表</h1>
-      <p class="hero-subtitle">清洁任务分配系统 · 共 23 名员工 · 17 个清洁任务</p>
+      <p class="hero-subtitle" id="hero-subtitle">清洁任务分配系统</p>
     </div>
     <div class="hero-badges">
       <span class="stat-pill">销售部专用</span>
-      <span class="stat-pill amber" id="progress-pill">已分配 0 / 17</span>
+      <span class="stat-pill amber" id="progress-pill">已分配 0 / 18</span>
     </div>
   </header>
 
@@ -535,11 +535,11 @@
   <!-- STATS -->
   <div class="stats-bar">
     <div class="stat-card">
-      <div class="stat-num" id="stat-total">23</div>
+      <div class="stat-num" id="stat-total">21</div>
       <div class="stat-label">全部员工</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num" id="stat-working">23</div>
+      <div class="stat-num" id="stat-working">21</div>
       <div class="stat-label">上班人数</div>
     </div>
     <div class="stat-card">
@@ -551,7 +551,7 @@
       <div class="stat-label">周六休息</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num" id="stat-free">23</div>
+      <div class="stat-num" id="stat-free">21</div>
       <div class="stat-label">待分配人员</div>
     </div>
   </div>
@@ -626,9 +626,9 @@ const ALL_EMPLOYEES = [
   '胡双双','韩大武','王涛','梁智','朱文雯',
   '王清月','王郡江','陶思雨','杨有淇','冯杉杉',
   '吴思湘','陈吉姝','袁丽妮',
-  '向文强','陈冉','徐晓辉',
+  '陈冉','徐晓辉','唐国涛',
   '秦金城','郭文','赵春艳',
-  '陈韵涵','杨译博','周广鑫','张子栋'
+  '杨译博','周广鑫'
 ];
 
 const AREAS = {
@@ -637,7 +637,7 @@ const AREAS = {
   '会议室':   ['擦桌椅玻璃门窗台及微波炉','扫地加整理仓库','拖地'],
   '贵宾室':   ['擦桌子窗台及玻璃门','扫地加拖地'],
   '前台':     ['前台清洁（固定：吴思湘）'],
-  '其他':     ['绿植浇水，换垃圾袋'],
+  '其他':     ['绿植浇水，换垃圾袋','擦大门玻璃'],
   '大厅角落': ['大厅角落清洁（固定：徐晓辉）']
 };
 
@@ -869,6 +869,7 @@ function updateAll() {
   const freeCount   = Math.max(0, workCount - assignedEmps.size);
   const totalTasks  = Object.values(AREAS).reduce((s,a)=>s+a.length,0);
 
+  document.getElementById('hero-subtitle').textContent = `清洁任务分配系统 · 共 ${ALL_EMPLOYEES.length} 名员工 · ${totalTasks} 个清洁任务`;
   document.getElementById('stat-total').textContent   = ALL_EMPLOYEES.length;
   document.getElementById('stat-working').textContent = workCount;
   document.getElementById('stat-assigned').textContent= assignedEmps.size;
