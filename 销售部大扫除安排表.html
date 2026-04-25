@@ -626,7 +626,7 @@ const ALL_EMPLOYEES = [
   '胡双双','韩大武','王涛','梁智','朱文雯',
   '王清月','王郡江','陶思雨','杨有淇','冯杉杉',
   '吴思湘','陈吉姝','袁丽妮',
-  '陈冉','徐晓辉','唐国涛',
+  '陈冉','徐晓辉','黄兆微',
   '秦金城','郭文','赵春艳',
   '杨译博','周广鑫'
 ];
@@ -637,7 +637,7 @@ const AREAS = {
   '会议室，仓库':   ['擦桌椅门窗及白板','扫地及凳子摆放整齐','拖地','擦微波炉冰箱及整理仓库'],
   '贵宾室':   ['擦桌子窗台及玻璃门','扫地加拖地'],
   '前台':     ['前台清洁（固定：吴思湘）'],
-  '其他':     ['绿植浇水，换垃圾袋','擦大门玻璃'],
+  '其他':     ['绿植浇水，换垃圾袋'],
   '大厅角落': ['大厅角落清洁（固定：徐晓辉）']
 };
 
@@ -941,10 +941,12 @@ function loadData() {
   const raw = localStorage.getItem('csClean2');
   if (!raw) { showToast('暂无保存数据'); return; }
   const data = JSON.parse(raw);
+  const validEmployees = new Set(ALL_EMPLOYEES);
+  const validTasks = new Set(Object.values(AREAS).flat());
   clearAll();
-  data.rest.forEach(moveToRest);
-  Object.entries(data.assignments).forEach(([task, emp]) => {
-    if (!FIXED_MAP[task]) {
+  (data.rest || []).filter(emp => validEmployees.has(emp)).forEach(moveToRest);
+  Object.entries(data.assignments || {}).forEach(([task, emp]) => {
+    if (validTasks.has(task) && validEmployees.has(emp) && !FIXED_MAP[task]) {
       assignments[task] = emp;
       removeFromGrid(emp);
     }
