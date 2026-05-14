@@ -103,6 +103,28 @@
       align-items: flex-end;
     }
 
+    .home-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      background: var(--cream);
+      border: 1px solid var(--parch);
+      color: var(--moss);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: var(--shadow-card);
+      transition: all 0.2s ease;
+    }
+
+    .home-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--leaf);
+    }
+
     .stat-pill {
       background: var(--moss);
       color: var(--white);
@@ -516,6 +538,7 @@
     <div class="hero-badges">
       <span class="stat-pill">销售部专用</span>
       <span class="stat-pill amber" id="progress-pill">已分配 0 / 18</span>
+      <a href="index.html" class="home-btn">⌂ 返回首页</a>
     </div>
   </header>
 

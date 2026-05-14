@@ -1,2032 +1,1047 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>呈尚策划公司 - 运营部智能排班系统</title>
-    <!-- Font Awesome 图标库 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Noto+Serif+SC:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <!-- SheetJS Excel导出库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- html2canvas 截图库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <style>
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            /* 日式简约色彩系统 */
-            --primary-color: #2D5016;
-            --primary-light: #4A7C2C;
-            --primary-dark: #1F3810;
-            --accent-color: #E8956C;
-            --accent-light: #F4B89A;
-            --success-color: #4A7C2C;
-            --warning-color: #E8956C;
-            --danger-color: #C84B31;
-            --info-color: #5B8A72;
-            --bg-cream: #FAF8F3;
-            --bg-warm: #F5F1E8;
-            --light-bg: #F5F1E8;
-            --card-bg: #FFFFFF;
-            --text-primary: #2C2C2C;
-            --text-secondary: #6B6B6B;
-            --text-tertiary: #9B9B9B;
-            --border-color: #E8E4DC;
-            --border-subtle: #E8E4DC;
-            --shadow-soft: 0 2px 8px rgba(45, 80, 22, 0.04);
-            --shadow-sm: 0 2px 8px rgba(45, 80, 22, 0.04);
-            --shadow-md: 0 4px 16px rgba(45, 80, 22, 0.08);
-            --shadow-medium: 0 4px 16px rgba(45, 80, 22, 0.08);
-            --shadow-lg: 0 8px 32px rgba(45, 80, 22, 0.12);
-            --shadow-strong: 0 8px 32px rgba(45, 80, 22, 0.12);
-            --shadow-xl: 0 12px 48px rgba(45, 80, 22, 0.16);
-            --radius-sm: 0.25rem;
-            --radius-md: 0.5rem;
-            --radius-lg: 1rem;
-            --radius-xl: 1.5rem;
-        }
-
-        body {
-            font-family: 'Noto Sans SC', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--bg-cream) 0%, var(--bg-warm) 100%);
-            min-height: 100vh;
-            padding: 0.75rem;
-            color: var(--text-primary);
-            line-height: 1.75;
-            letter-spacing: 0.01em;
-            position: relative;
-        }
-
-        /* 背景纹理 */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image:
-                radial-gradient(circle at 20% 30%, rgba(232, 149, 108, 0.03) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(45, 80, 22, 0.02) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-strong);
-            overflow: hidden;
-            position: relative;
-            z-index: 1;
-        }
-
-        .home-button {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            padding: 0.75rem 1.25rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-soft);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            z-index: 1000;
-            letter-spacing: 0.02em;
-        }
-
-        .home-button:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-medium);
-        }
-
-        .home-button:active {
-            transform: translateY(0);
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 2rem 1.25rem 1.5rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* 头部装饰纹理 */
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image:
-                linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
-                linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%),
-                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%);
-            background-size: 60px 60px;
-            background-position: 0 0, 0 30px, 30px -30px, -30px 0px;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .header h1 {
-            font-family: 'Noto Serif SC', serif;
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 0.5rem;
-            letter-spacing: 0.02em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .header h1 i {
-            font-size: 1.75rem;
-            opacity: 0.9;
-        }
-
-        .header p {
-            font-size: 1rem;
-            opacity: 0.92;
-            font-weight: 400;
-            letter-spacing: 0.03em;
-            position: relative;
-            z-index: 1;
-            margin: 0;
-        }
-
-        .handover-area {
-            padding: 1rem 1.25rem;
-            background: var(--light-bg);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .handover-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 1rem 1.25rem;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .handover-title {
-            font-weight: 700;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .handover-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 0.5rem 1rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .handover-item {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.35rem;
-            background: var(--bg-warm);
-            border-radius: var(--radius-sm);
-            padding: 0.4rem 0.6rem;
-        }
-
-        .handover-note {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            text-align: center;
-        }
-
-        .drag-area {
-            padding: 1.25rem;
-            background: var(--light-bg);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .drag-title {
-            text-align: center;
-            font-family: 'Noto Serif SC', serif;
-            font-size: 1.125rem;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .drag-title i {
-            color: var(--accent-color);
-        }
-
-        .drag-items {
-            display: flex;
-            justify-content: center;
-            gap: 1.25rem;
-            flex-wrap: wrap;
-        }
-
-        .drag-item {
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--radius-md);
-            cursor: grab;
-            font-weight: 600;
-            font-size: 0.875rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-md);
-            user-select: none;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
-            border: 2px solid transparent;
-        }
-
-        .drag-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.5s;
-        }
-
-        .drag-item:hover::before {
-            left: 100%;
-        }
-
-        .drag-item.work {
-            background: linear-gradient(135deg, var(--success-color), #059669);
-            color: white;
-            border-color: var(--success-color);
-        }
-
-        .drag-item.rest {
-            background: linear-gradient(135deg, var(--warning-color), #d97706);
-            color: white;
-            border-color: var(--warning-color);
-        }
-
-        .drag-item:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .drag-item:active {
-            cursor: grabbing;
-            transform: scale(0.95);
-        }
-
-        .schedule-area {
-            padding: 1.25rem;
-        }
-
-        .schedule-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: var(--card-bg);
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--border-color);
-        }
-
-        .schedule-table th {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 0.875rem 0.5rem;
-            text-align: center;
-            font-weight: 700;
-            font-size: 0.875rem;
-            letter-spacing: 0.02em;
-            position: relative;
-        }
-
-        .schedule-table th:first-child {
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-        }
-
-        .schedule-table td {
-            border: 1px solid var(--border-color);
-            padding: 0.75rem 0.5rem;
-            text-align: center;
-            min-height: 3rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            background: var(--card-bg);
-        }
-
-        .schedule-table td:hover {
-            background: var(--light-bg);
-        }
-
-        .employee-name {
-            background: linear-gradient(135deg, var(--light-bg), #f1f5f9);
-            font-weight: 600;
-            color: var(--text-primary);
-            border-right: 3px solid var(--primary-color) !important;
-            position: sticky;
-            left: 0;
-            z-index: 10;
-        }
-
-        .schedule-cell {
-            cursor: pointer;
-            min-height: 3rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.875rem;
-            border-radius: var(--radius-sm);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .schedule-cell.handover-assigned {
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .schedule-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .handover-text {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.85);
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        .schedule-cell::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: transparent;
-            transition: background 0.3s ease;
-            pointer-events: none;
-        }
-
-        .schedule-cell:hover {
-            background-color: var(--light-bg);
-            transform: scale(1.02);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .schedule-cell.drag-over {
-            background-color: #dbeafe;
-            border: 2px dashed var(--info-color);
-            transform: scale(1.05);
-            box-shadow: var(--shadow-md);
-        }
-
-        .schedule-cell.work-assigned {
-            background: linear-gradient(135deg, var(--success-color), #059669);
-            color: white;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .schedule-cell.work-assigned::before {
-            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-        }
-
-        .schedule-cell.rest-assigned {
-            background: linear-gradient(135deg, var(--warning-color), #d97706);
-            color: white;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .schedule-cell.rest-assigned::before {
-            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-        }
-
-        .schedule-cell.assigned {
-            position: relative;
-            cursor: pointer;
-        }
-
-        .schedule-cell.assigned:hover::after {
-            content: '双击删除 | 右键菜单';
-            position: absolute;
-            bottom: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            white-space: nowrap;
-            z-index: 1000;
-        }
-
-        .context-menu {
-            position: fixed;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-lg);
-            z-index: 1000;
-            min-width: 140px;
-            display: none;
-            overflow: hidden;
-        }
-
-        .context-menu-item {
-            padding: 0.75rem 1rem;
-            cursor: pointer;
-            border-bottom: 1px solid var(--border-color);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .context-menu-item:last-child {
-            border-bottom: none;
-        }
-
-        .context-menu-item:hover {
-            background-color: var(--light-bg);
-            transform: translateX(2px);
-        }
-
-        .context-menu-item.delete {
-            color: var(--danger-color);
-        }
-
-        .context-menu-item.work {
-            color: var(--success-color);
-        }
-
-        .context-menu-item.rest {
-            color: var(--warning-color);
-        }
-
-        .context-menu-item i {
-            width: 16px;
-            text-align: center;
-        }
-
-        .auto-schedule-area {
-            padding: 1.25rem;
-            background: var(--light-bg);
-            border-top: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .auto-schedule-title {
-            text-align: center;
-            font-size: 1.125rem;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .auto-schedule-title i {
-            color: var(--primary-color);
-        }
-
-        .schedule-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1rem;
-        }
-
-        .day-selector {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .day-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.5rem 0.75rem;
-            background: var(--card-bg);
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            user-select: none;
-            font-size: 0.8125rem;
-            font-weight: 500;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .day-checkbox::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(45, 80, 22, 0.1), transparent);
-            transition: left 0.5s;
-        }
-
-        .day-checkbox:hover::before {
-            left: 100%;
-        }
-
-        .day-checkbox:hover {
-            border-color: var(--primary-color);
-            background: rgba(250, 248, 243, 0.5);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .day-checkbox.selected {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-            color: white;
-            border-color: var(--primary-color);
-            box-shadow: var(--shadow-md);
-        }
-
-        .day-checkbox input[type="checkbox"] {
-            display: none;
-        }
-
-        .random-btn {
-            padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-md);
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.02em;
-        }
-
-        .random-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .random-btn:hover::before {
-            left: 100%;
-        }
-
-        .random-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .random-btn:active {
-            transform: translateY(0);
-        }
-
-        .random-btn:disabled {
-            background: var(--text-secondary);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .group-info {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 0.75rem;
-        }
-
-        .group-card {
-            background: var(--card-bg);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-            min-width: 160px;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .group-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
-        }
-
-        .group-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .group-title {
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.5rem;
-            text-align: center;
-            font-size: 0.9375rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.375rem;
-        }
-
-        .group-members {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-            text-align: center;
-            line-height: 1.4;
-        }
-
-        /* 底部操作区域样式 */
-        .bottom-actions {
-            padding: 1.25rem;
-            background: var(--light-bg);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-md);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            position: relative;
-            overflow: hidden;
-            min-width: 140px;
-            justify-content: center;
-        }
-
-        .action-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .action-btn:hover::before {
-            left: 100%;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .action-btn:active {
-            transform: translateY(0);
-        }
-
-        .clear-btn {
-            background: linear-gradient(135deg, var(--danger-color), #dc2626);
-            color: white;
-        }
-
-        .export-btn {
-            background: linear-gradient(135deg, var(--info-color), #2563eb);
-            color: white;
-        }
-
-        .save-btn {
-            background: linear-gradient(135deg, var(--success-color), #059669);
-            color: white;
-        }
-
-        .action-btn i {
-            font-size: 1.125rem;
-        }
-
-
-
-        @media (max-width: 768px) {
-            body {
-                padding: 0.5rem;
-            }
-
-            .container {
-                margin: 0;
-                border-radius: var(--radius-md);
-            }
-
-            .header {
-                padding: 1rem;
-            }
-
-            .header h1 {
-                font-size: 1.75rem;
-            }
-
-            .header p {
-                font-size: 0.875rem;
-            }
-
-            .drag-area {
-                padding: 1rem;
-            }
-
-            .drag-items {
-                gap: 0.75rem;
-            }
-
-            .drag-item {
-                padding: 0.625rem 1.25rem;
-                font-size: 0.8125rem;
-            }
-
-            .auto-schedule-area {
-                padding: 1rem;
-            }
-
-            .schedule-controls {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-
-            .day-selector {
-                justify-content: center;
-                gap: 0.375rem;
-            }
-
-            .day-checkbox {
-                padding: 0.375rem 0.625rem;
-                font-size: 0.75rem;
-            }
-
-            .group-info {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-
-            .group-card {
-                min-width: auto;
-                padding: 0.75rem;
-            }
-
-            .schedule-area {
-                padding: 1rem;
-                overflow-x: auto;
-            }
-            
-            .schedule-table {
-                min-width: 600px;
-            }
-
-            .schedule-table th,
-            .schedule-table td {
-                padding: 0.5rem 0.25rem;
-                font-size: 0.75rem;
-            }
-
-            .schedule-cell {
-                min-height: 2.5rem;
-                font-size: 0.75rem;
-            }
-
-            .bottom-actions {
-                padding: 1rem;
-            }
-
-            .action-buttons {
-                gap: 0.75rem;
-            }
-
-            .action-btn {
-                padding: 0.625rem 1.25rem;
-                font-size: 0.8125rem;
-                min-width: 120px;
-            }
-
-            .cleaning-area {
-                padding: 1rem;
-            }
-
-            .cleaning-cards {
-                gap: 0.75rem;
-            }
-
-            .cleaning-card {
-                min-width: auto;
-                padding: 0.75rem;
-                flex: 1;
-                max-width: 140px;
-            }
-
-            .cleaning-employee {
-                font-size: 0.875rem;
-            }
-
-            .cleaning-task {
-                font-size: 0.75rem;
-                padding: 0.375rem 0.5rem;
-            }
-
-            .task-name {
-                font-size: 0.75rem;
-            }
-
-            .task-description {
-                font-size: 0.6875rem;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>呈尚策划 · 运营部智能排班表</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg:           #ece8ff;
+    --bg-grad-1:    #efeaff;
+    --bg-grad-2:    #e6e3ff;
+    --card:         #ffffff;
+    --soft:         #f4f1ff;
+    --soft-2:       #ede8ff;
+    --border:       #e6e1f5;
+    --border-strong:#d9d2f0;
+
+    --primary:      #7c5cff;
+    --primary-2:    #6a47ff;
+    --primary-deep: #4a32c9;
+    --primary-soft: #f1ecff;
+
+    --pink:         #ff5b8a;
+    --pink-2:       #ff3f78;
+    --blue:         #4aa6ff;
+    --blue-2:       #2e90ff;
+    --orange:       #ff9a4d;
+    --orange-2:     #ff7e2e;
+
+    --ink:          #1f1b3a;
+    --ink-2:        #3a345e;
+    --muted:        #7a78a3;
+    --muted-2:      #9c9ab8;
+
+    --shadow-sm:    0 2px 8px rgba(80, 60, 180, 0.06);
+    --shadow-md:    0 8px 24px rgba(80, 60, 180, 0.10);
+    --shadow-lg:    0 16px 40px rgba(80, 60, 180, 0.16);
+    --shadow-btn:   0 6px 16px rgba(124, 92, 255, 0.30);
+
+    --r-sm:  8px;
+    --r-md:  12px;
+    --r-lg:  16px;
+    --r-xl:  22px;
+  }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: radial-gradient(1200px 800px at 10% -10%, #f3eeff 0%, transparent 60%),
+                radial-gradient(1000px 700px at 110% 110%, #e6e0ff 0%, transparent 55%),
+                linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+    min-height: 100vh;
+    color: var(--ink);
+    padding: 28px 22px 40px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 1480px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    padding: 28px 32px 32px;
+    position: relative;
+  }
+
+  /* ─────────── HEADER ─────────── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 22px;
+    position: relative;
+  }
+
+  .header-left { display: flex; flex-direction: column; gap: 10px; }
+
+  .title {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 30px; font-weight: 800;
+    color: var(--ink);
+    letter-spacing: 0.5px;
+  }
+  .title .sparkle {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #8a6bff, #6a47ff);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 17px;
+    box-shadow: 0 6px 14px rgba(106,71,255,.35);
+  }
+  .title .accent {
+    color: var(--primary);
+    font-size: 22px;
+    margin-left: 4px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14.5px;
+    font-weight: 500;
+    padding-left: 48px;
+    position: relative;
+  }
+  .subtitle::after {
+    content: '✨';
+    margin-left: 6px;
+    font-size: 14px;
+  }
+  .subtitle .underline {
+    position: relative;
+    display: inline-block;
+  }
+  .subtitle .underline::after {
+    content: '';
+    position: absolute;
+    left: -2px; right: -2px; bottom: -3px;
+    height: 6px;
+    background: linear-gradient(90deg, #ff7ab0, #ffc26b);
+    border-radius: 4px;
+    opacity: .55;
+    z-index: -1;
+  }
+
+  /* Decorative illustration on right */
+  .hero-illu {
+    position: relative;
+    width: 260px; height: 110px;
+    margin-right: 130px;
+    flex-shrink: 0;
+  }
+  .hero-illu svg { width: 100%; height: 100%; overflow: visible; }
+
+  .home-btn {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-2);
+    box-shadow: var(--shadow-sm);
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .2s ease;
+    align-self: flex-start;
+  }
+  .home-btn i { color: var(--primary); }
+  .home-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+  }
+
+  /* ─────────── FEATURE CARDS ─────────── */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+  .feat {
+    background: var(--soft);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    min-height: 64px;
+  }
+  .feat .ic {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #ece4ff, #ddd1ff);
+    color: var(--primary-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .feat .txt {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .feat-note {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 10px;
+    margin-bottom: 18px;
+  }
+  .feat-note i { color: var(--primary); }
+
+  /* ─────────── TWO COLUMN: DRAG + AUTO ─────────── */
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(340px, 1fr) minmax(640px, 2fr);
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .panel {
+    background: var(--soft);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 16px 18px;
+  }
+  .panel-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .panel-title .pt-ic {
+    width: 26px; height: 26px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #ede4ff, #d8c9ff);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--primary-2);
+    font-size: 13px;
+  }
+
+  /* drag buttons */
+  .drag-row { display: flex; gap: 14px; align-items: center; }
+  .drag-tag {
+    flex: 1;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    cursor: grab;
+    user-select: none;
+    border: none;
+    box-shadow: 0 6px 14px rgba(0,0,0,.08);
+    transition: transform .15s ease, box-shadow .2s ease;
+  }
+  .drag-tag.work {
+    background: linear-gradient(135deg, #8a6bff 0%, #6a47ff 100%);
+    box-shadow: 0 8px 18px rgba(106,71,255,.32);
+  }
+  .drag-tag.rest {
+    background: linear-gradient(135deg, #ff7ba6 0%, #ff3f78 100%);
+    box-shadow: 0 8px 18px rgba(255,90,138,.32);
+  }
+  .drag-tag:hover { transform: translateY(-2px); }
+  .drag-tag:active { cursor: grabbing; transform: scale(.97); }
+
+  /* day pills + generate */
+  .auto-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .day-pill {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 9px 16px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--ink-2);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s ease;
+    user-select: none;
+  }
+  .day-pill input { display: none; }
+  .day-pill:hover { border-color: var(--primary); color: var(--primary); }
+  .day-pill.selected {
+    background: linear-gradient(135deg, #8a6bff, #6a47ff);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 14px rgba(106,71,255,.28);
+  }
+  .gen-btn {
+    margin-left: auto;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 22px;
+    border-radius: 11px;
+    border: none;
+    background: linear-gradient(135deg, #8a6bff 0%, #6a47ff 100%);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-btn);
+    transition: transform .15s ease, box-shadow .2s ease;
+    white-space: nowrap;
+  }
+  .gen-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(124,92,255,.36); }
+  .gen-btn:disabled { opacity:.55; cursor:not-allowed; box-shadow:none; transform:none; }
+
+  /* ─────────── GROUP CARDS ─────────── */
+  .group-row {
+    display: grid;
+    grid-template-columns: minmax(340px, 1fr) minmax(640px, 2fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .group {
+    background: var(--soft);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 14px 18px;
+  }
+  .group .gh {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .group .gh .gic {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #ede4ff, #d8c9ff);
+    color: var(--primary-2);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .group .members {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    padding-left: 32px;
+  }
+  .group .rules {
+    font-size: 13px;
+    color: var(--muted);
+    padding-left: 32px;
+    line-height: 1.7;
+  }
+  .group .rules b { color: var(--ink-2); font-weight: 600; }
+  .group .rules .sep { color: var(--border-strong); margin: 0 10px; }
+
+  /* ─────────── TABLE ─────────── */
+  .table-wrap {
+    border-radius: var(--r-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(80,60,180,.05);
+    margin-bottom: 24px;
+  }
+  table.sched {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  table.sched thead th {
+    background: linear-gradient(135deg, #8a6bff 0%, #6a47ff 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14.5px;
+    padding: 16px 8px;
+    text-align: center;
+    letter-spacing: 0.5px;
+    border-right: 1px solid rgba(255,255,255,.18);
+  }
+  table.sched thead th:last-child { border-right: none; }
+  table.sched thead th:first-child { width: 170px; }
+
+  table.sched tbody td {
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding: 0;
+    height: 64px;
+    text-align: center;
+    background: #fff;
+    transition: background .2s ease;
+  }
+  table.sched tbody td:last-child { border-right: none; }
+
+  .emp-cell {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 18px;
+    height: 100%;
+    text-align: left;
+  }
+  .emp-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: cover;
+    background: #f4f1ff;
+    box-shadow: 0 2px 6px rgba(80,60,180,.10);
+    border: 2px solid #fff;
+    display: inline-block;
+  }
+
+  .schedule-cell {
+    height: 100%;
+    width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted-2);
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: all .2s ease;
+    padding: 6px;
+    user-select: none;
+  }
+  .schedule-cell.handover-assigned { flex-direction: column; gap: 3px; }
+  .schedule-cell .schedule-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 700; font-size: 14px;
+  }
+  .schedule-cell .handover-text {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: rgba(255,255,255,.92);
+    line-height: 1.25;
+  }
+  .schedule-cell.work-assigned {
+    background: linear-gradient(135deg, #8a6bff, #6a47ff);
+    color: #fff;
+  }
+  .schedule-cell.rest-assigned {
+    background: linear-gradient(135deg, #ff7ba6, #ff3f78);
+    color: #fff;
+  }
+  .schedule-cell:hover { background-color: var(--soft-2); }
+  .schedule-cell.work-assigned:hover { filter: brightness(1.05); }
+  .schedule-cell.rest-assigned:hover { filter: brightness(1.05); }
+  .schedule-cell.drag-over {
+    background: var(--primary-soft);
+    outline: 2px dashed var(--primary);
+    outline-offset: -4px;
+  }
+
+  /* ─────────── BOTTOM ACTIONS ─────────── */
+  .actions {
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 16px;
+  }
+  .act {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 13px 28px;
+    border-radius: 12px;
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14.5px;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(0,0,0,.08);
+    transition: transform .15s ease, box-shadow .2s ease;
+    min-width: 160px;
+    justify-content: center;
+  }
+  .act:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,.12); }
+  .act.clear  { background: linear-gradient(135deg, #ff7ba6, #ff3f78); }
+  .act.export { background: linear-gradient(135deg, #8a6bff, #6a47ff); }
+  .act.save   { background: linear-gradient(135deg, #5fb6ff, #2e90ff); }
+  .act.shot   { background: linear-gradient(135deg, #ffb069, #ff7e2e); }
+
+  /* ─────────── CONTEXT MENU ─────────── */
+  .context-menu {
+    position: fixed;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    min-width: 160px;
+    display: none;
+    overflow: hidden;
+    padding: 6px;
+  }
+  .context-menu-item {
+    padding: 9px 12px;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .context-menu-item:hover { background: var(--soft); }
+  .context-menu-item.work   { color: var(--primary-2); }
+  .context-menu-item.rest   { color: var(--pink-2); }
+  .context-menu-item.delete { color: #e0405e; }
+  .context-menu-item i { width: 14px; text-align: center; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 24px; left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: #1f1b3a;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .3s ease;
+    z-index: 99999;
+    box-shadow: 0 12px 30px rgba(0,0,0,.25);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 1100px) {
+    .features { grid-template-columns: repeat(2, 1fr); }
+    .two-col, .group-row { grid-template-columns: 1fr; }
+    .hero-illu { display: none; }
+  }
+  @media (max-width: 720px) {
+    .container { padding: 18px; }
+    .title { font-size: 22px; }
+    .subtitle { padding-left: 0; font-size: 13px; }
+    .features { grid-template-columns: 1fr; }
+    table.sched thead th:first-child { width: 110px; }
+    .emp-cell { padding: 0 8px; gap: 8px; }
+    .emp-name { font-size: 13px; }
+    .avatar { width: 30px; height: 30px; font-size: 12px; }
+  }
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- 返回首页按钮 -->
-        <a href="index.html" class="home-button">
-            <i class="fas fa-home"></i>
-            返回首页
-        </a>
 
-        <!-- 头部标题 -->
-        <div class="header">
-            <h1>
-                <i class="fas fa-calendar-alt"></i>
-                呈尚策划公司 - 运营部智能排班系统
-            </h1>
-            <p>运营部可拖拽排班表系统（6人）</p>
-        </div>
+<div class="container" id="captureRoot">
 
-        <div class="handover-area">
-            <div class="handover-card">
-                <div class="handover-title">
-                    <i class="fas fa-handshake"></i>
-                    调休期间工作对接
-                </div>
-                <div class="handover-list">
-                    <div class="handover-item">对接信息显示在上班单元格</div>
-                    <div class="handover-item">按当天排班随机均分分配</div>
-                    <div class="handover-item">每个上班人员必须对应一个休息人员（可重复）</div>
-                    <div class="handover-item">无休息人员时显示“对接：无休息人员”</div>
-                </div>
-                <div class="handover-note">如遇特殊情况，将提前调整对接安排。</div>
-            </div>
-        </div>
-
-        <!-- 拖拽标签区域 -->
-        <div class="drag-area">
-            <div class="drag-title">
-                <i class="fas fa-hand-paper"></i>
-                拖拽下方标签到排班表中安排工作
-            </div>
-            <div class="drag-items">
-                <div class="drag-item work" draggable="true" data-type="work">
-                    <i class="fas fa-briefcase"></i>
-                    上班
-                </div>
-                <div class="drag-item rest" draggable="true" data-type="rest">
-                    <i class="fas fa-bed"></i>
-                    休息
-                </div>
-            </div>
-        </div>
-
-        <!-- 自动排班区域 -->
-        <div class="auto-schedule-area">
-            <div class="auto-schedule-title">
-                <i class="fas fa-magic"></i>
-                智能随机排班
-            </div>
-
-            <div class="schedule-controls">
-                <div class="day-selector">
-                    <label class="day-checkbox">
-                        <input type="checkbox" value="0" data-day="星期一">
-                        <span>星期一</span>
-                    </label>
-                    <label class="day-checkbox">
-                        <input type="checkbox" value="1" data-day="星期二">
-                        <span>星期二</span>
-                    </label>
-                    <label class="day-checkbox">
-                        <input type="checkbox" value="2" data-day="星期三">
-                        <span>星期三</span>
-                    </label>
-                    <label class="day-checkbox">
-                        <input type="checkbox" value="3" data-day="星期四">
-                        <span>星期四</span>
-                    </label>
-                    <label class="day-checkbox">
-                        <input type="checkbox" value="4" data-day="星期五">
-                        <span>星期五</span>
-                    </label>
-                    <label class="day-checkbox selected">
-                        <input type="checkbox" value="5" data-day="星期六" checked>
-                        <span>星期六</span>
-                    </label>
-                    <label class="day-checkbox selected">
-                        <input type="checkbox" value="6" data-day="星期天" checked>
-                        <span>星期天</span>
-                    </label>
-                </div>
-
-                <button class="random-btn" onclick="generateRandomSchedule()">
-                    <i class="fas fa-dice"></i>
-                    生成随机排班
-                </button>
-            </div>
-
-            <div class="group-info">
-                <div class="group-card">
-                    <div class="group-title">
-                        <i class="fas fa-users"></i>
-                        运营组
-                    </div>
-                    <div class="group-members">王郡江、杨有淇、黄兆微、王涛、王清月、袁丽妮</div>
-                </div>
-                <div class="group-card">
-                    <div class="group-title">
-                        <i class="fas fa-clipboard-list"></i>
-                        排班规则
-                    </div>
-                    <div class="group-members">
-                        星期天：随机2人上班<br>
-                        2天排班：每人工作1天休息1天<br>
-                        互补原则：星期天上班→另一天休息<br>
-                        其他：随机安排
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 排班表区域 -->
-        <div class="schedule-area">
-            <table class="schedule-table">
-                <thead>
-                    <tr>
-                        <th>员工姓名</th>
-                        <th>星期一</th>
-                        <th>星期二</th>
-                        <th>星期三</th>
-                        <th>星期四</th>
-                        <th>星期五</th>
-                        <th>星期六</th>
-                        <th>星期天</th>
-                    </tr>
-                </thead>
-                <tbody id="scheduleBody">
-                    <!-- 员工排班行将通过JavaScript动态生成 -->
-                </tbody>
-            </table>
-        </div>
-
-
-
-        <!-- 底部操作区域 -->
-        <div class="bottom-actions">
-            <div class="action-buttons">
-                <button class="action-btn clear-btn" onclick="clearSchedule()">
-                    <i class="fas fa-trash-alt"></i>
-                    <span>清空排班表</span>
-                </button>
-                <button class="action-btn export-btn" onclick="exportToExcel()">
-                    <i class="fas fa-file-excel"></i>
-                    <span>导出Excel</span>
-                </button>
-                <button class="action-btn save-btn" onclick="saveSchedule()">
-                    <i class="fas fa-save"></i>
-                    <span>保存排班</span>
-                </button>
-                <button class="action-btn" style="background: linear-gradient(135deg, #06b6d4, #3b82f6); color: white;" onclick="copyTableScreenshot()">
-                    <i class="fas fa-camera"></i>
-                    <span>复制表格截图</span>
-                </button>
-            </div>
-        </div>
+  <!-- ─────────── HEADER ─────────── -->
+  <div class="header">
+    <div class="header-left">
+      <div class="title">
+        <span class="sparkle"><i class="fas fa-bolt"></i></span>
+        呈尚策划 · 运营部智能排班表
+        <span class="accent">✨</span>
+      </div>
+      <div class="subtitle">
+        <span class="underline">一键排班，高效协作，让团队运转更轻松</span>
+      </div>
     </div>
 
-    <!-- 右键菜单 -->
-    <div id="contextMenu" class="context-menu">
-        <div class="context-menu-item work" data-action="work">
-            <i class="fas fa-briefcase"></i>
-            设为上班
-        </div>
-        <div class="context-menu-item rest" data-action="rest">
-            <i class="fas fa-bed"></i>
-            设为休息
-        </div>
-        <div class="context-menu-item delete" data-action="delete">
-            <i class="fas fa-trash-alt"></i>
-            清空
-        </div>
+    <!-- decorative illustration -->
+    <div class="hero-illu" aria-hidden="true">
+      <svg viewBox="0 0 260 110" xmlns="http://www.w3.org/2000/svg">
+        <!-- floating dots -->
+        <circle cx="20" cy="30" r="9" fill="#ffd2e3"/>
+        <circle cx="70" cy="14" r="5" fill="#c9bdff"/>
+        <circle cx="118" cy="46" r="3.5" fill="#ffc9a3"/>
+        <polygon points="240,12 244,22 254,22 246,28 250,38 240,32 230,38 234,28 226,22 236,22" fill="#ffd76b"/>
+        <polygon points="180,0 183,7 190,7 184,11 186,18 180,14 174,18 176,11 170,7 177,7" fill="#ffd76b" opacity=".85"/>
+        <!-- calendar -->
+        <g transform="translate(110, 12)">
+          <rect x="0" y="10" width="92" height="78" rx="10" fill="#fff" stroke="#cabcff" stroke-width="2"/>
+          <rect x="0" y="10" width="92" height="22" rx="10" fill="#8a6bff"/>
+          <rect x="0" y="26" width="92" height="6" fill="#8a6bff"/>
+          <circle cx="18" cy="10" r="4" fill="#7050ff" stroke="#5a3fd6" stroke-width="2"/>
+          <circle cx="74" cy="10" r="4" fill="#7050ff" stroke="#5a3fd6" stroke-width="2"/>
+          <!-- grid dots -->
+          <g fill="#cabcff">
+            <rect x="10" y="42" width="12" height="9" rx="2"/>
+            <rect x="26" y="42" width="12" height="9" rx="2"/>
+            <rect x="42" y="42" width="12" height="9" rx="2" fill="#ff8db0"/>
+            <rect x="58" y="42" width="12" height="9" rx="2"/>
+            <rect x="74" y="42" width="12" height="9" rx="2"/>
+            <rect x="10" y="56" width="12" height="9" rx="2"/>
+            <rect x="26" y="56" width="12" height="9" rx="2" fill="#ffc26b"/>
+            <rect x="42" y="56" width="12" height="9" rx="2"/>
+            <rect x="58" y="56" width="12" height="9" rx="2"/>
+            <rect x="74" y="56" width="12" height="9" rx="2"/>
+            <rect x="10" y="70" width="12" height="9" rx="2"/>
+            <rect x="26" y="70" width="12" height="9" rx="2"/>
+            <rect x="42" y="70" width="12" height="9" rx="2"/>
+            <rect x="58" y="70" width="12" height="9" rx="2" fill="#9bd0ff"/>
+            <rect x="74" y="70" width="12" height="9" rx="2"/>
+          </g>
+        </g>
+        <!-- clock -->
+        <g transform="translate(200, 38)">
+          <circle cx="22" cy="22" r="22" fill="#fff" stroke="#8a6bff" stroke-width="2.5"/>
+          <circle cx="22" cy="22" r="2.5" fill="#6a47ff"/>
+          <line x1="22" y1="22" x2="22" y2="9" stroke="#6a47ff" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="22" y1="22" x2="32" y2="22" stroke="#6a47ff" stroke-width="2.5" stroke-linecap="round"/>
+        </g>
+        <!-- plant -->
+        <g transform="translate(50, 60)">
+          <rect x="2" y="22" width="22" height="20" rx="4" fill="#a48bff"/>
+          <path d="M13 22 C 4 14, 0 6, 8 0  C 12 6, 13 14, 13 22 Z" fill="#7ed598"/>
+          <path d="M13 22 C 22 14, 24 6, 18 2 C 14 8, 13 14, 13 22 Z" fill="#5fb87f"/>
+        </g>
+      </svg>
     </div>
 
-    <script>
-        // 员工名单和分组
-        const employees = ['王郡江', '杨有淇', '黄兆微', '王涛', '王清月', '袁丽妮'];
-        const operationGroup = ['王郡江', '杨有淇', '黄兆微', '王涛', '王清月', '袁丽妮']; // 运营组6人（彭润梅已离职）
-        const dayNames = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'];
-
-        function getEmployeeNameByCell(cell) {
-            const row = cell ? cell.closest('tr') : null;
-            const nameCell = row ? row.querySelector('.employee-name') : null;
-            return nameCell ? nameCell.textContent.trim() : '';
-        }
-
-        function shuffleArray(list) {
-            const array = [...list];
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        function updateHandoverAssignments() {
-            const scheduleRows = document.querySelectorAll('#scheduleBody tr');
-            const dayCount = 7;
-
-            for (let day = 0; day < dayCount; day++) {
-                const workCells = [];
-                const restNames = [];
-
-                scheduleRows.forEach(row => {
-                    const cell = row.children[day + 1];
-                    if (!cell) {
-                        return;
-                    }
-                    const scheduleCell = cell.querySelector('.schedule-cell');
-                    if (!scheduleCell) {
-                        return;
-                    }
-
-                    const employeeName = getEmployeeNameByCell(scheduleCell);
-
-                    if (scheduleCell.classList.contains('work-assigned')) {
-                        workCells.push({ cell: scheduleCell, name: employeeName });
-                    } else if (scheduleCell.classList.contains('rest-assigned')) {
-                        restNames.push(employeeName);
-                    }
-                });
-
-                if (workCells.length === 0) {
-                    continue;
-                }
-
-                if (restNames.length === 0) {
-                    workCells.forEach(item => {
-                        const textNode = item.cell.querySelector('.handover-text');
-                        if (textNode) {
-                            textNode.textContent = '对接：无休息人员';
-                        }
-                    });
-                    continue;
-                }
-
-                const shuffledRest = shuffleArray(restNames);
-                const shuffledWork = shuffleArray(workCells);
-                const assignments = new Map();
-
-                workCells.forEach(item => assignments.set(item.cell, []));
-
-                if (shuffledRest.length >= shuffledWork.length) {
-                    shuffledRest.forEach((restName, index) => {
-                        const target = shuffledWork[index % shuffledWork.length];
-                        assignments.get(target.cell).push(restName);
-                    });
-                } else {
-                    shuffledWork.forEach((workItem, index) => {
-                        const restName = shuffledRest[index % shuffledRest.length];
-                        assignments.get(workItem.cell).push(restName);
-                    });
-                }
-
-                workCells.forEach(item => {
-                    const names = assignments.get(item.cell) || [];
-                    const textNode = item.cell.querySelector('.handover-text');
-                    if (!textNode) {
-                        return;
-                    }
-                    if (names.length === 0) {
-                        textNode.textContent = '对接：无休息人员';
-                    } else {
-                        textNode.textContent = `对接：${names.join('、')}`;
-                    }
-                });
-            }
-        }
-
-        
-        // 初始化排班表
-        function initScheduleTable() {
-            const tbody = document.getElementById('scheduleBody');
-            
-            employees.forEach(employee => {
-                const row = document.createElement('tr');
-                
-                // 员工姓名列
-                const nameCell = document.createElement('td');
-                nameCell.className = 'employee-name';
-                nameCell.textContent = employee;
-                row.appendChild(nameCell);
-                
-                // 一周7天的排班单元格
-                for (let day = 0; day < 7; day++) {
-                    const cell = document.createElement('td');
-                    const scheduleCell = document.createElement('div');
-                    scheduleCell.className = 'schedule-cell';
-                    scheduleCell.textContent = '点击或拖拽安排';
-                    
-                    // 添加拖拽事件监听器
-                    scheduleCell.addEventListener('dragover', handleDragOver);
-                    scheduleCell.addEventListener('drop', handleDrop);
-                    scheduleCell.addEventListener('dragleave', handleDragLeave);
-
-                    // 添加双击删除功能
-                    scheduleCell.addEventListener('dblclick', handleDoubleClick);
-
-                    // 添加右键菜单功能
-                    scheduleCell.addEventListener('contextmenu', handleRightClick);
-                    
-                    cell.appendChild(scheduleCell);
-                    row.appendChild(cell);
-                }
-                
-                tbody.appendChild(row);
-            });
-        }
-        
-        // 初始化拖拽功能
-        function initDragAndDrop() {
-            const dragItems = document.querySelectorAll('.drag-item');
-
-            dragItems.forEach(item => {
-                item.addEventListener('dragstart', handleDragStart);
-            });
-        }
-
-        // 初始化天数选择器
-        function initDaySelector() {
-            const dayCheckboxes = document.querySelectorAll('.day-checkbox');
-
-            dayCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('click', function() {
-                    const input = this.querySelector('input[type="checkbox"]');
-                    input.checked = !input.checked;
-
-                    if (input.checked) {
-                        this.classList.add('selected');
-                    } else {
-                        this.classList.remove('selected');
-                    }
-
-                    // 更新按钮状态
-                    updateRandomButtonState();
-                });
-            });
-        }
-
-        // 更新随机排班按钮状态
-        function updateRandomButtonState() {
-            const selectedDays = document.querySelectorAll('.day-checkbox input:checked');
-            const randomBtn = document.querySelector('.random-btn');
-
-            if (selectedDays.length === 0) {
-                randomBtn.disabled = true;
-                randomBtn.textContent = '请先选择排班天数';
-            } else {
-                randomBtn.disabled = false;
-                randomBtn.textContent = `🎯 生成随机排班 (${selectedDays.length}天)`;
-            }
-        }
-        
-        // 拖拽开始事件
-        function handleDragStart(e) {
-            const type = e.target.getAttribute('data-type');
-            e.dataTransfer.setData('text/plain', type);
-            e.target.style.opacity = '0.5';
-            
-            // 添加拖拽效果
-            setTimeout(() => {
-                e.target.style.opacity = '1';
-            }, 100);
-        }
-        
-        // 拖拽悬停事件
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('drag-over');
-        }
-        
-        // 拖拽离开事件
-        function handleDragLeave(e) {
-            e.currentTarget.classList.remove('drag-over');
-        }
-        
-        // 拖拽放置事件
-        function handleDrop(e) {
-            e.preventDefault();
-            const type = e.dataTransfer.getData('text/plain');
-            const cell = e.currentTarget;
-
-            // 移除拖拽悬停效果
-            cell.classList.remove('drag-over');
-
-            // 设置排班状态
-            setScheduleStatus(cell, type);
-        }
-
-        // 设置排班状态的通用函数
-        function setScheduleStatus(cell, type) {
-            // 清除之前的状态
-            cell.classList.remove('work-assigned', 'rest-assigned', 'assigned', 'handover-assigned');
-
-            // 根据类型设置新状态
-            if (type === 'work') {
-                cell.classList.add('work-assigned', 'assigned', 'handover-assigned');
-                cell.innerHTML = `
-                    <div class="schedule-status"><i class="fas fa-briefcase"></i> 上班</div>
-                    <div class="handover-text">对接：待分配</div>
-                `;
-            } else if (type === 'rest') {
-                cell.classList.add('rest-assigned', 'assigned');
-                cell.innerHTML = '<div class="schedule-status"><i class="fas fa-bed"></i> 休息</div>';
-            } else if (type === 'clear') {
-                cell.textContent = '点击或拖拽安排';
-            }
-
-            // 添加成功动画效果
-            cell.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                cell.style.transform = 'scale(1)';
-            }, 200);
-
-            updateHandoverAssignments();
-        }
-
-        // 双击删除功能
-        function handleDoubleClick(e) {
-            const cell = e.currentTarget;
-            if (cell.classList.contains('assigned')) {
-                setScheduleStatus(cell, 'clear');
-
-                // 添加删除动画效果
-                cell.style.background = '#ffebee';
-                setTimeout(() => {
-                    cell.style.background = '';
-                }, 300);
-            }
-        }
-
-        // 右键菜单功能
-        function handleRightClick(e) {
-            e.preventDefault();
-            const contextMenu = document.getElementById('contextMenu');
-            const cell = e.currentTarget;
-
-            // 设置菜单位置
-            contextMenu.style.left = e.pageX + 'px';
-            contextMenu.style.top = e.pageY + 'px';
-            contextMenu.style.display = 'block';
-
-            // 存储当前单元格引用
-            contextMenu.currentCell = cell;
-
-            // 点击其他地方隐藏菜单
-            setTimeout(() => {
-                document.addEventListener('click', hideContextMenu);
-            }, 10);
-        }
-
-        // 隐藏右键菜单
-        function hideContextMenu() {
-            const contextMenu = document.getElementById('contextMenu');
-            contextMenu.style.display = 'none';
-            document.removeEventListener('click', hideContextMenu);
-        }
-        
-        // 初始化右键菜单事件
-        function initContextMenu() {
-            const contextMenu = document.getElementById('contextMenu');
-            const menuItems = contextMenu.querySelectorAll('.context-menu-item');
-
-            menuItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    const action = this.getAttribute('data-action');
-                    const cell = contextMenu.currentCell;
-
-                    if (cell) {
-                        if (action === 'delete') {
-                            setScheduleStatus(cell, 'clear');
-                        } else {
-                            setScheduleStatus(cell, action);
-                        }
-                    }
-
-                    hideContextMenu();
-                });
-            });
-        }
-
-        // 随机排班生成函数
-        function generateRandomSchedule() {
-            const selectedDays = document.querySelectorAll('.day-checkbox input:checked');
-
-            if (selectedDays.length === 0) {
-                alert('请先选择要排班的天数！');
-                return;
-            }
-
-            // 获取所有排班单元格
-            const scheduleRows = document.querySelectorAll('#scheduleBody tr');
-            const selectedDaysList = Array.from(selectedDays).map(input => ({
-                index: parseInt(input.value),
-                name: input.getAttribute('data-day')
-            }));
-
-            // 清空选中天数的所有排班
-            selectedDaysList.forEach(day => {
-                scheduleRows.forEach(row => {
-                    const cell = row.children[day.index + 1];
-                    if (cell) {
-                        const scheduleCell = cell.querySelector('.schedule-cell');
-                        setScheduleStatus(scheduleCell, 'clear');
-                    }
-                });
-            });
-
-            // 如果选择2天，使用特殊的人员配置算法
-            if (selectedDaysList.length === 2) {
-                generateTwoDaySchedule(selectedDaysList, scheduleRows);
-            } else {
-                // 单天或多天（非2天）使用原有逻辑
-                generateRegularSchedule(selectedDaysList, scheduleRows);
-            }
-
-            // 显示成功提示
-            showSuccessMessage();
-
-
-        }
-
-        // 2天排班的特殊算法 - 严格互补排班逻辑
-        function generateTwoDaySchedule(selectedDays, scheduleRows) {
-            console.log('=== 开始2天互补排班算法 ===');
-            console.log(`选择的天数: ${selectedDays.map(d => d.name).join(', ')}`);
-
-            // 检查是否包含星期天
-            const sundayDay = selectedDays.find(day => day.name === '星期天');
-            const otherDay = selectedDays.find(day => day.name !== '星期天');
-
-            if (!sundayDay) {
-                // 如果没有星期天，使用常规算法
-                console.log('没有星期天，使用常规2天排班');
-                generateRegularTwoDaySchedule(selectedDays, scheduleRows);
-                return;
-            }
-
-            console.log(`星期天: ${sundayDay.name}, 另一天: ${otherDay.name}`);
-
-            // 第一步：处理星期天 - 随机选择2人上班
-            const shuffledEmployees = [...employees].sort(() => Math.random() - 0.5);
-            const sundayWorker1 = shuffledEmployees[0];
-            const sundayWorker2 = shuffledEmployees[1];
-
-            console.log(`星期天上班人员: ${sundayWorker1}, ${sundayWorker2}`);
-
-            // 第二步：确定星期天休息的人员
-            const sundayRestEmployees = employees.filter(emp =>
-                emp !== sundayWorker1 && emp !== sundayWorker2
-            );
-
-            console.log(`星期天休息人员: ${sundayRestEmployees.join(', ')}`);
-
-            // 第三步：应用互补原则
-            // 星期天上班的人，另一天休息
-            // 星期天休息的人，另一天上班
-            const otherDayWorkers = sundayRestEmployees;
-            const otherDayRestEmployees = [sundayWorker1, sundayWorker2];
-
-            console.log(`${otherDay.name}上班人员: ${otherDayWorkers.join(', ')}`);
-            console.log(`${otherDay.name}休息人员: ${otherDayRestEmployees.join(', ')}`);
-
-            // 第四步：应用排班到界面
-            scheduleRows.forEach(row => {
-                const employeeName = row.children[0].textContent;
-
-                // 处理星期天
-                const sundayCell = row.children[sundayDay.index + 1];
-                if (sundayCell) {
-                    const sundayScheduleCell = sundayCell.querySelector('.schedule-cell');
-                    if (employeeName === sundayWorker1 || employeeName === sundayWorker2) {
-                        setScheduleStatus(sundayScheduleCell, 'work');
-                    } else {
-                        setScheduleStatus(sundayScheduleCell, 'rest');
-                    }
-                }
-
-                // 处理另一天
-                const otherDayCell = row.children[otherDay.index + 1];
-                if (otherDayCell) {
-                    const otherDayScheduleCell = otherDayCell.querySelector('.schedule-cell');
-                    if (otherDayWorkers.includes(employeeName)) {
-                        setScheduleStatus(otherDayScheduleCell, 'work');
-                    } else {
-                        setScheduleStatus(otherDayScheduleCell, 'rest');
-                    }
-                }
-            });
-
-            // 第五步：验证排班结果
-            console.log('=== 排班验证 ===');
-            let isValid = true;
-
-            employees.forEach(emp => {
-                let workDays = 0;
-                let restDays = 0;
-
-                selectedDays.forEach(day => {
-                    scheduleRows.forEach(row => {
-                        if (row.children[0].textContent === emp) {
-                            const cell = row.children[day.index + 1];
-                            if (cell) {
-                                const scheduleCell = cell.querySelector('.schedule-cell');
-                                if (scheduleCell.classList.contains('work-assigned')) {
-                                    workDays++;
-                                } else if (scheduleCell.classList.contains('rest-assigned')) {
-                                    restDays++;
-                                }
-                            }
-                        }
-                    });
-                });
-
-                console.log(`${emp}: 工作${workDays}天, 休息${restDays}天`);
-
-                if (workDays !== 1 || restDays !== 1) {
-                    console.error(`❌ ${emp} 排班不符合规则！应该工作1天休息1天`);
-                    isValid = false;
-                }
-            });
-
-            // 验证星期天人数
-            let sundayWorkCount = 0;
-            scheduleRows.forEach(row => {
-                const cell = row.children[sundayDay.index + 1];
-                if (cell && cell.querySelector('.schedule-cell').classList.contains('work-assigned')) {
-                    sundayWorkCount++;
-                }
-            });
-
-            console.log(`星期天上班人数: ${sundayWorkCount}`);
-            if (sundayWorkCount !== 2) {
-                console.error(`❌ 星期天上班人数错误！应该是2人，实际是${sundayWorkCount}人`);
-                isValid = false;
-            }
-
-            if (isValid) {
-                console.log('✅ 排班验证通过！');
-            } else {
-                console.error('❌ 排班验证失败！');
-            }
-
-            console.log('=== 2天互补排班算法完成 ===');
-        }
-
-        // 常规2天排班算法（不包含星期天）
-        function generateRegularTwoDaySchedule(selectedDays, scheduleRows) {
-            console.log('执行常规2天排班算法');
-
-            // 为每个人随机分配1天工作，1天休息
-            employees.forEach(emp => {
-                const workDayIndex = Math.floor(Math.random() * 2); // 0或1
-
-                selectedDays.forEach((day, dayIdx) => {
-                    scheduleRows.forEach(row => {
-                        if (row.children[0].textContent === emp) {
-                            const cell = row.children[day.index + 1];
-                            if (cell) {
-                                const scheduleCell = cell.querySelector('.schedule-cell');
-                                if (dayIdx === workDayIndex) {
-                                    setScheduleStatus(scheduleCell, 'work');
-                                } else {
-                                    setScheduleStatus(scheduleCell, 'rest');
-                                }
-                            }
-                        }
-                    });
-                });
-            });
-        }
-
-
-        // 常规排班算法（非2天）
-        function generateRegularSchedule(selectedDays, scheduleRows) {
-            selectedDays.forEach(day => {
-                if (day.name === '星期天') {
-                    // 星期天特殊规则：随机2人上班
-                    const shuffledEmployees = [...employees].sort(() => Math.random() - 0.5);
-                    const sundayWorker1 = shuffledEmployees[0];
-                    const sundayWorker2 = shuffledEmployees[1];
-
-                    scheduleRows.forEach(row => {
-                        const employeeName = row.children[0].textContent;
-                        const cell = row.children[day.index + 1];
-
-                        if (cell) {
-                            const scheduleCell = cell.querySelector('.schedule-cell');
-
-                            if (employeeName === sundayWorker1 || employeeName === sundayWorker2) {
-                                setScheduleStatus(scheduleCell, 'work');
-                            } else {
-                                setScheduleStatus(scheduleCell, 'rest');
-                            }
-                        }
-                    });
-                } else {
-                    // 其他天数：随机安排
-                    const workCount = Math.floor(Math.random() * 4) + 2; // 2-5个人上班
-                    const shuffledEmployees = [...employees].sort(() => Math.random() - 0.5);
-                    const workingEmployees = shuffledEmployees.slice(0, workCount);
-
-                    scheduleRows.forEach(row => {
-                        const employeeName = row.children[0].textContent;
-                        const cell = row.children[day.index + 1];
-
-                        if (cell) {
-                            const scheduleCell = cell.querySelector('.schedule-cell');
-
-                            if (workingEmployees.includes(employeeName)) {
-                                setScheduleStatus(scheduleCell, 'work');
-                            } else {
-                                setScheduleStatus(scheduleCell, 'rest');
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-        // 显示成功消息
-        function showSuccessMessage() {
-            const randomBtn = document.querySelector('.random-btn');
-            const originalText = randomBtn.innerHTML;
-            randomBtn.innerHTML = '<i class="fas fa-check"></i> 排班生成完成！';
-            randomBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-
-            setTimeout(() => {
-                randomBtn.innerHTML = originalText;
-                randomBtn.style.background = '';
-            }, 2000);
-        }
-
-        // 清空排班表
-        function clearSchedule() {
-            if (confirm('确定要清空所有排班安排吗？此操作不可撤销。')) {
-                const scheduleCells = document.querySelectorAll('.schedule-cell');
-                scheduleCells.forEach(cell => {
-                    setScheduleStatus(cell, 'clear');
-                });
-
-
-
-                // 显示成功提示
-                showActionMessage('clear-btn', '<i class="fas fa-check"></i> 排班表已清空', '#ef4444');
-            }
-        }
-
-        // 导出Excel
-        function exportToExcel() {
-            try {
-                // 创建工作簿
-                const wb = XLSX.utils.book_new();
-
-                // 获取排班数据
-                const scheduleData = [];
-                const headerRow = ['员工姓名', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'];
-                scheduleData.push(headerRow);
-
-                const scheduleRows = document.querySelectorAll('#scheduleBody tr');
-                scheduleRows.forEach(row => {
-                    const rowData = [];
-                    const cells = row.querySelectorAll('td');
-
-                    cells.forEach((cell, index) => {
-                        if (index === 0) {
-                            // 员工姓名
-                            rowData.push(cell.textContent);
-                        } else {
-                            // 排班状态
-                            const scheduleCell = cell.querySelector('.schedule-cell');
-                            if (scheduleCell.classList.contains('work-assigned')) {
-                                rowData.push('上班');
-                            } else if (scheduleCell.classList.contains('rest-assigned')) {
-                                rowData.push('休息');
-                            } else {
-                                rowData.push('');
-                            }
-                        }
-                    });
-
-                    scheduleData.push(rowData);
-                });
-
-                // 创建工作表
-                const ws = XLSX.utils.aoa_to_sheet(scheduleData);
-
-                // 设置列宽
-                ws['!cols'] = [
-                    { width: 12 }, // 员工姓名
-                    { width: 10 }, // 星期一
-                    { width: 10 }, // 星期二
-                    { width: 10 }, // 星期三
-                    { width: 10 }, // 星期四
-                    { width: 10 }, // 星期五
-                    { width: 10 }, // 星期六
-                    { width: 10 }  // 星期天
-                ];
-
-                // 添加工作表到工作簿
-                XLSX.utils.book_append_sheet(wb, ws, '排班表');
-
-                // 生成文件名
-                const now = new Date();
-                const fileName = `排班表_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}.xlsx`;
-
-                // 导出文件
-                XLSX.writeFile(wb, fileName);
-
-                // 显示成功提示
-                showActionMessage('export-btn', '<i class="fas fa-check"></i> 导出成功', '#3b82f6');
-
-            } catch (error) {
-                console.error('导出失败:', error);
-                alert('导出失败，请检查是否已加载Excel导出库。');
-            }
-        }
-
-        // 保存排班
-        function saveSchedule() {
-            try {
-                const scheduleData = {};
-                const scheduleRows = document.querySelectorAll('#scheduleBody tr');
-
-                scheduleRows.forEach(row => {
-                    const employeeName = row.querySelector('.employee-name').textContent;
-                    const weekSchedule = {};
-
-                    const cells = row.querySelectorAll('td');
-                    cells.forEach((cell, index) => {
-                        if (index > 0) { // 跳过员工姓名列
-                            const dayName = dayNames[index - 1];
-                            const scheduleCell = cell.querySelector('.schedule-cell');
-
-                            if (scheduleCell.classList.contains('work-assigned')) {
-                                weekSchedule[dayName] = '上班';
-                            } else if (scheduleCell.classList.contains('rest-assigned')) {
-                                weekSchedule[dayName] = '休息';
-                            } else {
-                                weekSchedule[dayName] = '';
-                            }
-                        }
-                    });
-
-                    scheduleData[employeeName] = weekSchedule;
-                });
-
-                // 保存到本地存储
-                const saveKey = `schedule_${new Date().getTime()}`;
-                localStorage.setItem(saveKey, JSON.stringify(scheduleData));
-                localStorage.setItem('latest_schedule', saveKey);
-
-                // 显示成功提示
-                showActionMessage('save-btn', '<i class="fas fa-check"></i> 保存成功', '#10b981');
-
-            } catch (error) {
-                console.error('保存失败:', error);
-                alert('保存失败，请检查浏览器是否支持本地存储。');
-            }
-        }
-
-        // 检测是否在Tauri环境中运行
-        function isTauriEnvironment() {
-            return typeof window !== 'undefined' &&
-                   typeof window.__TAURI__ !== 'undefined' &&
-                   typeof window.__TAURI__.core !== 'undefined';
-        }
-
-        // 下载图片作为降级方案
-        function downloadImage(canvas, filename) {
-            const link = document.createElement('a');
-            link.download = filename;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }
-
-        // 使用Tauri API复制图片到剪切板
-        async function copyImageWithTauri(canvas) {
-            try {
-                // 诊断：检查Tauri插件是否存在
-                console.log('🔍 [诊断] window.__TAURI__:', typeof window.__TAURI__);
-                console.log('🔍 [诊断] window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__:', typeof window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__);
-
-                // 尝试多种API路径
-                let writeImageFunc = null;
-
-                // 方法1: 直接访问插件对象
-                if (window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__ && window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__.writeImage) {
-                    writeImageFunc = window.__TAURI_PLUGIN_CLIPBOARD_MANAGER__.writeImage;
-                    console.log('✅ [Tauri] 找到插件方法1');
-                }
-                // 方法2: 通过__TAURI__访问
-                else if (window.__TAURI__ && window.__TAURI__.clipboard) {
-                    writeImageFunc = window.__TAURI__.clipboard.writeImage;
-                    console.log('✅ [Tauri] 找到插件方法2');
-                }
-
-                if (writeImageFunc) {
-                    // 关键修复：获取RGBA格式的像素数据
-                    const ctx = canvas.getContext('2d');
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                    // imageData.data 就是 Uint8ClampedArray 格式的RGBA数据
-                    // 转换为普通的Uint8Array
-                    const rgbaData = new Uint8Array(imageData.data);
-
-                    console.log('📊 [Tauri] 图片尺寸:', canvas.width, 'x', canvas.height);
-                    console.log('📊 [Tauri] RGBA数据长度:', rgbaData.length);
-
-                    // 尝试方法1: 传递包含宽高的对象
-                    try {
-                        await writeImageFunc({
-                            rgba: Array.from(rgbaData),
-                            width: canvas.width,
-                            height: canvas.height
-                        });
-                        console.log('✅ [Tauri] 使用原生API复制图片成功（方法1：对象格式）');
-                        return true;
-                    } catch (error1) {
-                        console.warn('⚠️ [Tauri] 方法1失败:', error1.message);
-
-                        // 尝试方法2: 只传递RGBA数据
-                        try {
-                            await writeImageFunc(rgbaData);
-                            console.log('✅ [Tauri] 使用原生API复制图片成功（方法2：纯数据）');
-                            return true;
-                        } catch (error2) {
-                            console.error('⚠️ [Tauri] 方法2也失败:', error2.message);
-                            throw error2;
-                        }
-                    }
-                }
-
-                // 方法3: 使用PNG base64格式（推荐）
-                if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
-                    console.log('✅ [Tauri] 尝试PNG base64方法');
-
-                    // 将canvas转换为PNG base64
-                    const base64Data = canvas.toDataURL('image/png');
-
-                    // 移除data:image/png;base64,前缀
-                    const base64Image = base64Data.replace(/^data:image\/png;base64,/, '');
-
-                    console.log('📊 [Tauri] Base64数据长度:', base64Image.length);
-
-                    try {
-                        await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image_base64', {
-                            image: base64Image
-                        });
-                        console.log('✅ [Tauri] PNG base64方法复制成功');
-                        return true;
-                    } catch (error) {
-                        console.warn('⚠️ [Tauri] PNG base64方法失败:', error.message);
-
-                        // 尝试原始PNG二进制数据
-                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                        const arrayBuffer = await blob.arrayBuffer();
-                        const pngData = Array.from(new Uint8Array(arrayBuffer));
-
-                        await window.__TAURI__.core.invoke('plugin:clipboard-manager|write_image', {
-                            image: pngData
-                        });
-                        console.log('✅ [Tauri] PNG二进制方法复制成功');
-                        return true;
-                    }
-                }
-
-                console.warn('⚠️ [Tauri] 未找到可用的剪切板API');
-                return false;
-            } catch (error) {
-                console.error('⚠️ [Tauri] 原生API复制失败:', error);
-                return false;
-            }
-        }
-
-        // 复制表格截图到剪切板
-        async function copyTableScreenshot() {
-            try {
-                // 获取排班表区域元素
-                const scheduleArea = document.querySelector('.schedule-area');
-
-                if (!scheduleArea) {
-                    alert('未找到排班表区域');
-                    return;
-                }
-
-                // 显示加载提示
-                const button = event.target.closest('.action-btn');
-                const originalText = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>截图中...</span>';
-                button.disabled = true;
-
-                // 检测运行环境
-                const isTauri = isTauriEnvironment();
-                console.log('🔍 [截图] 环境检测:', isTauri ? 'Tauri桌面应用' : '浏览器');
-
-                // 使用html2canvas截图
-                const canvas = await html2canvas(scheduleArea, {
-                    backgroundColor: '#ffffff',
-                    scale: 2,
-                    logging: false,
-                    useCORS: true
-                });
-
-                let copySuccess = false;
-
-                // 策略1: 如果是Tauri环境，优先尝试使用Tauri原生API
-                if (isTauri) {
-                    console.log('📋 [Tauri] 尝试使用原生API复制图片...');
-                    copySuccess = await copyImageWithTauri(canvas);
-
-                    if (copySuccess) {
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                        showActionMessage('action-btn', '<i class="fas fa-check"></i> 使用Tauri原生API复制成功', '#10b981');
-                        return;
-                    }
-                }
-
-                // 策略2: 尝试使用浏览器Clipboard API
-                console.log('📋 [浏览器] 尝试使用Clipboard API...');
-                canvas.toBlob(async (blob) => {
-                    try {
-                        await navigator.clipboard.write([
-                            new ClipboardItem({'image/png': blob})
-                        ]);
-
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-                        console.log('✅ [剪切板] 图片复制成功');
-                        showActionMessage('action-btn', '<i class="fas fa-check"></i> 截图已复制到剪切板', '#06b6d4');
-                    } catch (err) {
-                        console.error('⚠️ [剪切板] 复制失败，使用降级方案:', err.message);
-
-                        // 策略3: 降级方案 - 下载图片
-                        const filename = `排班表_${new Date().toISOString().slice(0,10)}.png`;
-                        downloadImage(canvas, filename);
-
-                        button.innerHTML = originalText;
-                        button.disabled = false;
-
-                        if (isTauri) {
-                            showActionMessage('action-btn', '<i class="fas fa-download"></i> 已自动下载到本地', '#10b981');
-                        } else {
-                            showActionMessage('action-btn', '<i class="fas fa-download"></i> 已下载图片', '#10b981');
-                        }
-                    }
-                }, 'image/png');
-
-            } catch (error) {
-                console.error('❌ [截图] 截图失败:', error);
-                alert('截图失败：' + error.message);
-                const button = event.target.closest('.action-btn');
-                button.innerHTML = '<i class="fas fa-camera"></i><span>复制表格截图</span>';
-                button.disabled = false;
-            }
-        }
-
-        // 显示操作消息
-        function showActionMessage(buttonClass, message, color) {
-            const button = document.querySelector(`.${buttonClass}`);
-            const originalContent = button.innerHTML;
-            const originalBackground = button.style.background;
-
-            button.innerHTML = message;
-            button.style.background = `linear-gradient(135deg, ${color}, ${color}dd)`;
-
-            setTimeout(() => {
-                button.innerHTML = originalContent;
-                button.style.background = originalBackground;
-            }, 2000);
-        }
-
-
-
-
-
-
-
-        // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            initScheduleTable();
-            initDragAndDrop();
-            initContextMenu();
-            initDaySelector();
-            updateRandomButtonState();
-
-            // 添加一些提示信息
-            console.log('🎉 智能排班系统已加载完成！');
-            console.log('📝 使用说明：');
-            console.log('   - 拖拽标签到表格中进行排班安排');
-            console.log('   - 双击已安排的单元格可以清空');
-            console.log('   - 右键点击单元格可以打开菜单');
-            console.log('   - 选择天数后点击智能排班按钮自动生成');
-            console.log('   - 使用底部按钮进行清空、导出、保存操作');
-            console.log('💡 新功能：2天互补排班算法，确保工作负荷平衡！');
-
+    <a href="index.html" class="home-btn">
+      <i class="fas fa-home"></i>
+      返回首页
+    </a>
+  </div>
+
+  <!-- ─────────── FEATURE CARDS ─────────── -->
+  <div class="features">
+    <div class="feat">
+      <div class="ic"><i class="fas fa-bell"></i></div>
+      <div class="txt">对接信息显示在上班单元格</div>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="fas fa-shuffle"></i></div>
+      <div class="txt">按当天排班随机均分分配</div>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="fas fa-user-group"></i></div>
+      <div class="txt">每个上班人员必须对应一个休息人员（可重复）</div>
+    </div>
+    <div class="feat">
+      <div class="ic"><i class="fas fa-eye-slash"></i></div>
+      <div class="txt">无休息人员时显示"对接：无休息人员"</div>
+    </div>
+  </div>
+  <div class="feat-note">
+    <i class="fas fa-circle-info"></i>
+    如遇特殊情况，将提前调整对接安排。
+  </div>
+
+  <!-- ─────────── DRAG + AUTO ─────────── -->
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">
+        <span class="pt-ic"><i class="fas fa-hand-paper"></i></span>
+        拖拽下方标签到排班表中安排工作
+      </div>
+      <div class="drag-row">
+        <div class="drag-tag work" draggable="true" data-type="work">
+          <i class="fas fa-briefcase"></i> 上班
+        </div>
+        <div class="drag-tag rest" draggable="true" data-type="rest">
+          <i class="fas fa-bed"></i> 休息
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">
+        <span class="pt-ic"><i class="fas fa-wand-magic-sparkles"></i></span>
+        智能随机排班
+      </div>
+      <div class="auto-row" id="daySelector">
+        <label class="day-pill"><input type="checkbox" value="0" data-day="星期一"><span>星期一</span></label>
+        <label class="day-pill"><input type="checkbox" value="1" data-day="星期二"><span>星期二</span></label>
+        <label class="day-pill"><input type="checkbox" value="2" data-day="星期三"><span>星期三</span></label>
+        <label class="day-pill"><input type="checkbox" value="3" data-day="星期四"><span>星期四</span></label>
+        <label class="day-pill"><input type="checkbox" value="4" data-day="星期五"><span>星期五</span></label>
+        <label class="day-pill selected"><input type="checkbox" value="5" data-day="星期六" checked><span>星期六</span></label>
+        <label class="day-pill selected"><input type="checkbox" value="6" data-day="星期天" checked><span>星期天</span></label>
+        <button class="gen-btn" id="genBtn" onclick="generateRandomSchedule()">
+          <i class="fas fa-wand-magic-sparkles"></i>
+          <span id="genBtnText">生成随机排班（1天）</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── GROUP + RULES ─────────── -->
+  <div class="group-row">
+    <div class="group">
+      <div class="gh"><span class="gic"><i class="fas fa-users"></i></span>运营组</div>
+      <div class="members">王郡江、杨有淇、黄兆微、王涛、王清月、袁丽妮</div>
+    </div>
+    <div class="group">
+      <div class="gh"><span class="gic"><i class="fas fa-book"></i></span>智能规则</div>
+      <div class="rules">
+        <b>星期天</b>：随机2人上班 <span class="sep">|</span> <b>2天排班</b>：每人工作1天休息1天<br>
+        <b>互补原则</b>：星期天上班 → 另一天休息 <span class="sep">|</span> <b>其他</b>：随机安排
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────── TABLE ─────────── -->
+  <div class="table-wrap">
+    <table class="sched">
+      <thead>
+        <tr>
+          <th>员工姓名</th>
+          <th>星期一</th><th>星期二</th><th>星期三</th>
+          <th>星期四</th><th>星期五</th><th>星期六</th><th>星期天</th>
+        </tr>
+      </thead>
+      <tbody id="scheduleBody"></tbody>
+    </table>
+  </div>
+
+  <!-- ─────────── BOTTOM ACTIONS ─────────── -->
+  <div class="actions">
+    <button class="act clear"  onclick="clearSchedule()"><i class="fas fa-trash-can"></i> 清空排班表</button>
+    <button class="act export" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> 导出Excel</button>
+    <button class="act save"   onclick="saveSchedule()"><i class="fas fa-floppy-disk"></i> 保存排班</button>
+    <button class="act shot"   onclick="copyTableScreenshot()"><i class="fas fa-camera"></i> 复制表格截图</button>
+  </div>
+
+</div>
+
+<!-- 右键菜单 -->
+<div id="contextMenu" class="context-menu">
+  <div class="context-menu-item work"   data-action="work"><i class="fas fa-briefcase"></i> 设为上班</div>
+  <div class="context-menu-item rest"   data-action="rest"><i class="fas fa-bed"></i> 设为休息</div>
+  <div class="context-menu-item delete" data-action="delete"><i class="fas fa-trash-can"></i> 清空</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ───────── data ─────────
+  const employees = ['王郡江', '杨有淇', '黄兆微', '王涛', '王清月', '袁丽妮'];
+  const dayNames = ['星期一','星期二','星期三','星期四','星期五','星期六','星期天'];
+
+  function makeAvatar(name) {
+    const img = document.createElement('img');
+    img.className = 'avatar';
+    img.alt = name;
+    img.src = `头像/${encodeURIComponent(name)}.png`;
+    return img;
+  }
+
+  // ───────── init table ─────────
+  function initScheduleTable() {
+    const tbody = document.getElementById('scheduleBody');
+    employees.forEach((emp, i) => {
+      const tr = document.createElement('tr');
+
+      const nameTd = document.createElement('td');
+      const wrap = document.createElement('div');
+      wrap.className = 'emp-cell';
+      wrap.appendChild(makeAvatar(emp));
+      const nm = document.createElement('span');
+      nm.className = 'emp-name';
+      nm.textContent = emp;
+      wrap.appendChild(nm);
+      nameTd.appendChild(wrap);
+      tr.appendChild(nameTd);
+
+      for (let d = 0; d < 7; d++) {
+        const td = document.createElement('td');
+        const cell = document.createElement('div');
+        cell.className = 'schedule-cell';
+        cell.textContent = '点击或拖拽安排';
+        cell.addEventListener('dragover', handleDragOver);
+        cell.addEventListener('drop', handleDrop);
+        cell.addEventListener('dragleave', handleDragLeave);
+        cell.addEventListener('dblclick', handleDoubleClick);
+        cell.addEventListener('contextmenu', handleRightClick);
+        td.appendChild(cell);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ───────── drag tags ─────────
+  function initDragAndDrop() {
+    document.querySelectorAll('.drag-tag').forEach(el => {
+      el.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', el.dataset.type);
+        el.style.opacity = '.6';
+        setTimeout(() => el.style.opacity = '1', 80);
+      });
+    });
+  }
+
+  // ───────── day selector ─────────
+  function initDaySelector() {
+    document.querySelectorAll('.day-pill').forEach(label => {
+      label.addEventListener('click', e => {
+        // checkbox toggles natively; sync class after
+        setTimeout(() => {
+          const inp = label.querySelector('input');
+          label.classList.toggle('selected', inp.checked);
+          updateGenBtn();
+        }, 0);
+      });
+    });
+  }
+  function updateGenBtn() {
+    const sel = document.querySelectorAll('.day-pill input:checked');
+    const btn = document.getElementById('genBtn');
+    const txt = document.getElementById('genBtnText');
+    if (sel.length === 0) {
+      btn.disabled = true;
+      txt.textContent = '请先选择排班天数';
+    } else {
+      btn.disabled = false;
+      txt.textContent = `生成随机排班（${sel.length}天）`;
+    }
+  }
+
+  // ───────── employee helpers ─────────
+  function getEmployeeNameByCell(cell) {
+    const row = cell ? cell.closest('tr') : null;
+    const nameEl = row ? row.querySelector('.emp-name') : null;
+    return nameEl ? nameEl.textContent.trim() : '';
+  }
+  function shuffleArray(list) {
+    const a = [...list];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // ───────── handover assign ─────────
+  function updateHandoverAssignments() {
+    const rows = document.querySelectorAll('#scheduleBody tr');
+    for (let day = 0; day < 7; day++) {
+      const works = [], rests = [];
+      rows.forEach(row => {
+        const td = row.children[day + 1];
+        const sc = td && td.querySelector('.schedule-cell');
+        if (!sc) return;
+        const name = getEmployeeNameByCell(sc);
+        if (sc.classList.contains('work-assigned')) works.push({cell:sc, name});
+        else if (sc.classList.contains('rest-assigned')) rests.push(name);
+      });
+      if (!works.length) continue;
+      if (!rests.length) {
+        works.forEach(w => {
+          const t = w.cell.querySelector('.handover-text');
+          if (t) t.textContent = '对接：无休息人员';
         });
-        
-        // 添加键盘快捷键支持（可选功能）
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'z') {
-                // 可以在这里添加撤销功能
-                console.log('撤销功能（待实现）');
-            }
-        });
-    </script>
+        continue;
+      }
+      const sR = shuffleArray(rests), sW = shuffleArray(works);
+      const map = new Map();
+      works.forEach(w => map.set(w.cell, []));
+      if (sR.length >= sW.length) {
+        sR.forEach((rn, i) => map.get(sW[i % sW.length].cell).push(rn));
+      } else {
+        sW.forEach((wo, i) => map.get(wo.cell).push(sR[i % sR.length]));
+      }
+      works.forEach(w => {
+        const names = map.get(w.cell) || [];
+        const t = w.cell.querySelector('.handover-text');
+        if (!t) return;
+        t.textContent = names.length ? `对接：${names.join('、')}` : '对接：无休息人员';
+      });
+    }
+  }
+
+  // ───────── set status ─────────
+  function setScheduleStatus(cell, type) {
+    cell.classList.remove('work-assigned', 'rest-assigned', 'assigned', 'handover-assigned');
+    if (type === 'work') {
+      cell.classList.add('work-assigned', 'assigned', 'handover-assigned');
+      cell.innerHTML = '<div class="schedule-status"><i class="fas fa-briefcase"></i> 上班</div><div class="handover-text">对接：待分配</div>';
+    } else if (type === 'rest') {
+      cell.classList.add('rest-assigned', 'assigned');
+      cell.innerHTML = '<div class="schedule-status"><i class="fas fa-bed"></i> 休息</div>';
+    } else {
+      cell.textContent = '点击或拖拽安排';
+    }
+    cell.style.transform = 'scale(1.06)';
+    setTimeout(() => cell.style.transform = '', 180);
+    updateHandoverAssignments();
+  }
+
+  // ───────── DnD ─────────
+  function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+  function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+  function handleDrop(e) {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('text/plain');
+    e.currentTarget.classList.remove('drag-over');
+    setScheduleStatus(e.currentTarget, type);
+  }
+  function handleDoubleClick(e) {
+    const c = e.currentTarget;
+    if (c.classList.contains('assigned')) setScheduleStatus(c, 'clear');
+  }
+  function handleRightClick(e) {
+    e.preventDefault();
+    const m = document.getElementById('contextMenu');
+    m.style.left = e.pageX + 'px';
+    m.style.top = e.pageY + 'px';
+    m.style.display = 'block';
+    m.currentCell = e.currentTarget;
+    setTimeout(() => document.addEventListener('click', hideContextMenu), 10);
+  }
+  function hideContextMenu() {
+    document.getElementById('contextMenu').style.display = 'none';
+    document.removeEventListener('click', hideContextMenu);
+  }
+  function initContextMenu() {
+    document.querySelectorAll('.context-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const m = document.getElementById('contextMenu');
+        const a = item.dataset.action;
+        if (m.currentCell) setScheduleStatus(m.currentCell, a === 'delete' ? 'clear' : a);
+        hideContextMenu();
+      });
+    });
+  }
+
+  // ───────── random schedule ─────────
+  function generateRandomSchedule() {
+    const sel = document.querySelectorAll('.day-pill input:checked');
+    if (!sel.length) { toast('请先选择排班天数'); return; }
+    const rows = document.querySelectorAll('#scheduleBody tr');
+    const days = Array.from(sel).map(i => ({index: +i.value, name: i.dataset.day}));
+
+    // clear selected days
+    days.forEach(d => rows.forEach(r => {
+      const c = r.children[d.index + 1];
+      if (c) setScheduleStatus(c.querySelector('.schedule-cell'), 'clear');
+    }));
+
+    if (days.length === 2) generateTwoDay(days, rows);
+    else generateRegular(days, rows);
+
+    toast('排班生成成功 ✨');
+  }
+
+  function generateTwoDay(days, rows) {
+    const sun = days.find(d => d.name === '星期天');
+    const oth = days.find(d => d !== sun);
+    if (!sun) { generateRegular(days, rows); return; }
+    const shuffled = shuffleArray(employees);
+    const w1 = shuffled[0], w2 = shuffled[1];
+    const sunRest = employees.filter(e => e !== w1 && e !== w2);
+    const othWork = sunRest;
+    rows.forEach(r => {
+      const name = r.querySelector('.emp-name').textContent;
+      const sCell = r.children[sun.index + 1].querySelector('.schedule-cell');
+      setScheduleStatus(sCell, (name === w1 || name === w2) ? 'work' : 'rest');
+      const oCell = r.children[oth.index + 1].querySelector('.schedule-cell');
+      setScheduleStatus(oCell, othWork.includes(name) ? 'work' : 'rest');
+    });
+  }
+
+  function generateRegular(days, rows) {
+    days.forEach(d => {
+      let workCount;
+      if (d.name === '星期天') workCount = 2;
+      else workCount = Math.floor(employees.length / 2) + (Math.random() < .5 ? 0 : 1);
+      const shuffled = shuffleArray(employees);
+      const workers = shuffled.slice(0, workCount);
+      rows.forEach(r => {
+        const name = r.querySelector('.emp-name').textContent;
+        const cell = r.children[d.index + 1].querySelector('.schedule-cell');
+        setScheduleStatus(cell, workers.includes(name) ? 'work' : 'rest');
+      });
+    });
+  }
+
+  // ───────── action buttons ─────────
+  function clearSchedule() {
+    if (!confirm('确定清空整张排班表吗？')) return;
+    document.querySelectorAll('.schedule-cell').forEach(c => setScheduleStatus(c, 'clear'));
+    toast('已清空 ✓');
+  }
+
+  function exportToExcel() {
+    const data = [['员工姓名', ...dayNames]];
+    document.querySelectorAll('#scheduleBody tr').forEach(row => {
+      const name = row.querySelector('.emp-name').textContent;
+      const cells = Array.from(row.children).slice(1).map(td => {
+        const sc = td.querySelector('.schedule-cell');
+        if (sc.classList.contains('work-assigned')) {
+          const ht = sc.querySelector('.handover-text');
+          return ht ? `上班（${ht.textContent}）` : '上班';
+        }
+        if (sc.classList.contains('rest-assigned')) return '休息';
+        return '';
+      });
+      data.push([name, ...cells]);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '排班表');
+    XLSX.writeFile(wb, `排班表_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast('已导出 Excel ✓');
+  }
+
+  function saveSchedule() {
+    const data = [];
+    document.querySelectorAll('#scheduleBody tr').forEach(row => {
+      const name = row.querySelector('.emp-name').textContent;
+      const arr = Array.from(row.children).slice(1).map(td => {
+        const sc = td.querySelector('.schedule-cell');
+        if (sc.classList.contains('work-assigned')) return 'work';
+        if (sc.classList.contains('rest-assigned')) return 'rest';
+        return '';
+      });
+      data.push({name, schedule: arr});
+    });
+    localStorage.setItem('schedule_v2', JSON.stringify(data));
+    toast('已保存到本地 ✓');
+  }
+
+  function copyTableScreenshot() {
+    const wrap = document.querySelector('.table-wrap');
+    html2canvas(wrap, {backgroundColor: '#ffffff', scale: 2}).then(canvas => {
+      canvas.toBlob(blob => {
+        if (navigator.clipboard && window.ClipboardItem) {
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+            .then(() => toast('截图已复制到剪贴板 ✓'))
+            .catch(() => downloadBlob(blob));
+        } else {
+          downloadBlob(blob);
+        }
+      });
+    });
+  }
+  function downloadBlob(blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '排班表截图.png';
+    a.click();
+    toast('已下载截图 ✓');
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ───────── boot ─────────
+  document.addEventListener('DOMContentLoaded', () => {
+    initScheduleTable();
+    initDragAndDrop();
+    initDaySelector();
+    initContextMenu();
+    updateGenBtn();
+  });
+</script>
 </body>
 </html>
