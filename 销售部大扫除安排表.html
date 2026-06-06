@@ -440,6 +440,9 @@
       gap: 0.75rem;
       flex-wrap: wrap;
       justify-content: center;
+      align-items: center;
+      max-width: 720px;
+      margin: 0 auto;
       padding: 1.5rem;
       background: var(--cream);
       border: 1px solid var(--parch);
@@ -501,6 +504,104 @@
       min-width: 180px;
       max-height: min(360px, calc(100vh - 1rem));
       overflow-y: auto;
+    }
+
+    /* EDIT MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(42,42,32,0.38);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+    }
+    .modal-backdrop.is-open { display: flex; }
+    .modal-card {
+      width: min(460px, 100%);
+      background: var(--cream);
+      border: 1px solid var(--parch);
+      border-radius: var(--r-lg);
+      box-shadow: 0 24px 64px rgba(42,42,32,0.24);
+      padding: 1.4rem;
+      position: relative;
+      animation: modalIn 0.18s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal-close {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.9rem;
+      width: 2rem;
+      height: 2rem;
+      border: 1px solid var(--parch);
+      border-radius: 50%;
+      background: var(--white);
+      color: var(--mid);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--moss); box-shadow: var(--shadow-card); }
+    .modal-title {
+      font-family: 'ZCOOL XiaoWei', serif;
+      color: var(--moss);
+      font-size: 1.45rem;
+      letter-spacing: 0.04em;
+      padding-right: 2.5rem;
+      margin-bottom: 0.3rem;
+    }
+    .modal-subtitle {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.6;
+      margin-bottom: 1.1rem;
+    }
+    .modal-fields {
+      display: grid;
+      gap: 0.95rem;
+    }
+    .modal-field {
+      display: grid;
+      gap: 0.45rem;
+    }
+    .modal-field span {
+      color: var(--mid);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .modal-field input,
+    .modal-field select {
+      width: 100%;
+      border: 1.5px solid var(--parch);
+      border-radius: var(--r-sm);
+      background: var(--white);
+      color: var(--ink);
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 0.94rem;
+      padding: 0.75rem 0.85rem;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+    .modal-field input:focus,
+    .modal-field select:focus {
+      border-color: var(--fern);
+      box-shadow: 0 0 0 3px rgba(92,124,93,0.14);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.7rem;
+      margin-top: 1.25rem;
+    }
+    .modal-actions .btn {
+      min-width: 94px;
+      justify-content: center;
     }
 
     /* TOAST */
@@ -631,11 +732,6 @@
     <button class="btn btn-rust"    onclick="clearAll()">🗑 清空分配</button>
     <button class="btn btn-fern"    onclick="addArea()">➕ 添加区域</button>
     <button class="btn btn-fern"    onclick="addTask()">🧽 添加清洁内容</button>
-    <button class="btn btn-fern"    onclick="saveData()">💾 保存</button>
-    <button class="btn btn-fern"    onclick="loadData()">📂 加载</button>
-    <button class="btn btn-amber"   onclick="showStats()">📊 查看统计</button>
-    <button class="btn btn-amber"   onclick="exportExcel()">📥 导出 Excel</button>
-    <button class="btn btn-outline" onclick="showToast('请使用浏览器截图工具保存页面截图')">📷 截图提示</button>
   </div>
 
 </div>
@@ -652,6 +748,22 @@
 
 <div class="ctx-menu" id="area-ctx-menu">
   <div class="ctx-item" id="area-ctx-delete">🗑 删除区域</div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-backdrop" id="edit-modal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+    <button class="modal-close" type="button" id="edit-modal-close" aria-label="关闭">×</button>
+    <h2 class="modal-title" id="edit-modal-title">添加</h2>
+    <p class="modal-subtitle" id="edit-modal-subtitle"></p>
+    <form id="edit-modal-form">
+      <div class="modal-fields" id="edit-modal-fields"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" type="button" id="edit-modal-cancel">取消</button>
+        <button class="btn btn-primary" type="submit" id="edit-modal-submit">确认添加</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -1115,12 +1227,120 @@ function loadData() {
   showToast('加载成功！');
 }
 
-function addArea() {
-  const area = (prompt('请输入新增区域名称') || '').trim();
+function openEditModal(config) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('edit-modal');
+    const form = document.getElementById('edit-modal-form');
+    const fieldsWrap = document.getElementById('edit-modal-fields');
+    const title = document.getElementById('edit-modal-title');
+    const subtitle = document.getElementById('edit-modal-subtitle');
+    const submitBtn = document.getElementById('edit-modal-submit');
+    const cancelBtn = document.getElementById('edit-modal-cancel');
+    const closeBtn = document.getElementById('edit-modal-close');
+    let settled = false;
+
+    title.textContent = config.title;
+    subtitle.textContent = config.subtitle || '';
+    submitBtn.textContent = config.submitText || '确认添加';
+    fieldsWrap.innerHTML = '';
+
+    config.fields.forEach(field => {
+      const label = document.createElement('label');
+      label.className = 'modal-field';
+      const caption = document.createElement('span');
+      caption.textContent = field.label;
+      const input = field.type === 'select' ? document.createElement('select') : document.createElement('input');
+      input.name = field.name;
+      input.required = true;
+
+      if (field.type === 'select') {
+        field.options.forEach(option => {
+          const item = document.createElement('option');
+          item.value = option.value;
+          item.textContent = option.label;
+          input.appendChild(item);
+        });
+      } else {
+        input.type = 'text';
+        input.placeholder = field.placeholder || '';
+        input.autocomplete = 'off';
+      }
+
+      label.appendChild(caption);
+      label.appendChild(input);
+      fieldsWrap.appendChild(label);
+    });
+
+    function close(result) {
+      if (settled) return;
+      settled = true;
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      form.removeEventListener('submit', onSubmit);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+      modal.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKeydown);
+      resolve(result);
+    }
+
+    function onCancel() {
+      close(null);
+    }
+
+    function onBackdrop(e) {
+      if (e.target === modal) close(null);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Escape') close(null);
+    }
+
+    function onSubmit(e) {
+      e.preventDefault();
+      const values = {};
+      for (const field of config.fields) {
+        const input = form.elements[field.name];
+        const value = (input.value || '').trim();
+        if (!value) {
+          input.focus();
+          showToast('请填写完整信息');
+          return;
+        }
+        values[field.name] = value;
+      }
+      close(values);
+    }
+
+    form.addEventListener('submit', onSubmit);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
+    modal.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKeydown);
+
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    const firstField = fieldsWrap.querySelector('input, select');
+    if (firstField) setTimeout(() => firstField.focus(), 0);
+  });
+}
+
+async function addArea() {
+  const result = await openEditModal({
+    title: '添加区域',
+    subtitle: '新增区域会自动保存到本地，下次打开页面仍会保留。',
+    submitText: '添加区域',
+    fields: [
+      { name: 'area', label: '区域名称', placeholder: '例如：会议室' },
+      { name: 'task', label: '第一个清洁内容', placeholder: '例如：擦拭会议桌' }
+    ]
+  });
+  if (!result) return;
+  const area = result.area;
   if (!area) return;
   if (AREAS[area]) { showToast('该区域已存在'); return; }
 
-  const task = (prompt(`请输入「${area}」的第一个清洁内容`) || '').trim();
+  const task = result.task;
   if (!task) return;
   if (isTaskNameInUse(task)) { showToast('清洁内容名称已存在，请换一个名称'); return; }
 
@@ -1130,13 +1350,26 @@ function addArea() {
   showToast('已添加区域');
 }
 
-function addTask() {
-  const areaInput = (prompt(`请输入要添加清洁内容的区域名称：\n${Object.keys(AREAS).join('、')}`) || '').trim();
-  if (!areaInput) return;
-  const area = Object.keys(AREAS).find(name => name === areaInput);
+async function addTask() {
+  const result = await openEditModal({
+    title: '添加清洁内容',
+    subtitle: '选择区域后填写新的清洁内容，提交后会自动保存到本地。',
+    submitText: '添加内容',
+    fields: [
+      {
+        name: 'area',
+        label: '所属区域',
+        type: 'select',
+        options: Object.keys(AREAS).map(area => ({ value: area, label: area }))
+      },
+      { name: 'task', label: '清洁内容', placeholder: '例如：清理地面污渍' }
+    ]
+  });
+  if (!result) return;
+  const area = Object.keys(AREAS).find(name => name === result.area);
   if (!area) { showToast('未找到该区域'); return; }
 
-  const task = (prompt(`请输入「${area}」新增的清洁内容`) || '').trim();
+  const task = result.task;
   if (!task) return;
   if (isTaskNameInUse(task)) { showToast('清洁内容名称已存在，请换一个名称'); return; }
 
