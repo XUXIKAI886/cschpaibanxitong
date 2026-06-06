@@ -949,10 +949,8 @@ function renderTaskContextMenu() {
     empty.className = 'ctx-item';
     empty.textContent = '暂无可分配员工';
     menu.appendChild(empty);
-    return;
-  }
-
-  employees.forEach(emp => {
+  } else {
+    employees.forEach(emp => {
     const item = document.createElement('div');
     item.className = 'ctx-item';
     item.dataset.employee = emp;
@@ -962,7 +960,23 @@ function renderTaskContextMenu() {
       hideTaskCtx();
     });
     menu.appendChild(item);
-  });
+    });
+  }
+
+  if (canDeleteTask(taskCtxTask)) {
+    const sep = document.createElement('div');
+    sep.className = 'ctx-sep';
+    menu.appendChild(sep);
+
+    const del = document.createElement('div');
+    del.className = 'ctx-item';
+    del.textContent = '🗑 删除清洁内容';
+    del.addEventListener('click', () => {
+      if (taskCtxTask) deleteCustomTask(taskCtxTask);
+      hideTaskCtx();
+    });
+    menu.appendChild(del);
+  }
 }
 
 function moveToRest(emp) {
@@ -1144,6 +1158,18 @@ function deleteCustomArea(area) {
   showToast('已删除区域');
 }
 
+function deleteCustomTask(task) {
+  if (!canDeleteTask(task)) { showToast('默认清洁内容不可删除'); return; }
+  const area = getTaskArea(task);
+  if (!area) return;
+  if (assignments[task]) returnEmpToGrid(assignments[task]);
+  delete assignments[task];
+  AREAS[area] = AREAS[area].filter(item => item !== task);
+  rebuildCleaningView();
+  persistData();
+  showToast('已删除清洁内容');
+}
+
 function isTaskNameInUse(task) {
   return Object.values(AREAS).some(tasks => tasks.includes(task));
 }
@@ -1237,6 +1263,15 @@ function getAreaTaskKeys(area) {
 
 function isDefaultArea(area) {
   return Object.prototype.hasOwnProperty.call(DEFAULT_AREAS, area);
+}
+
+function getTaskArea(task) {
+  return Object.keys(AREAS).find(area => AREAS[area].includes(task));
+}
+
+function canDeleteTask(task) {
+  const area = getTaskArea(task);
+  return !!area && isDefaultArea(area) && !DEFAULT_AREAS[area].includes(task);
 }
 
 function showStats() {

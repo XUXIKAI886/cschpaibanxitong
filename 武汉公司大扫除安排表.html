@@ -962,10 +962,8 @@ function renderTaskContextMenu() {
     empty.className = 'ctx-item';
     empty.textContent = '暂无可分配员工';
     menu.appendChild(empty);
-    return;
-  }
-
-  employees.forEach(emp => {
+  } else {
+    employees.forEach(emp => {
     const item = document.createElement('div');
     item.className = 'ctx-item';
     item.dataset.employee = emp;
@@ -975,7 +973,23 @@ function renderTaskContextMenu() {
       hideTaskCtx();
     });
     menu.appendChild(item);
-  });
+    });
+  }
+
+  if (canDeleteTask(taskCtxTask)) {
+    const sep = document.createElement('div');
+    sep.className = 'ctx-sep';
+    menu.appendChild(sep);
+
+    const del = document.createElement('div');
+    del.className = 'ctx-item';
+    del.textContent = '🗑 删除清洁内容';
+    del.addEventListener('click', () => {
+      if (taskCtxTask) deleteCustomTask(taskCtxTask);
+      hideTaskCtx();
+    });
+    menu.appendChild(del);
+  }
 }
 
 function moveToRest(emp) {
@@ -1157,6 +1171,32 @@ function deleteCustomArea(area) {
   showToast('已删除区域');
 }
 
+function deleteCustomTask(task) {
+  if (!canDeleteTask(task)) { showToast('默认清洁内容不可删除'); return; }
+  const { area, index } = parseTaskKey(task);
+  if (!area || !AREAS[area]) return;
+
+  const deletedEmp = assignments[task];
+  const nextAssignments = {};
+  Object.entries(assignments).forEach(([key, emp]) => {
+    const parsed = parseTaskKey(key);
+    if (parsed.area !== area) {
+      nextAssignments[key] = emp;
+    } else if (parsed.index < index) {
+      nextAssignments[key] = emp;
+    } else if (parsed.index > index) {
+      nextAssignments[makeTaskKey(area, parsed.index - 1)] = emp;
+    }
+  });
+  if (deletedEmp) returnEmpToGrid(deletedEmp);
+
+  AREAS[area].splice(index, 1);
+  assignments = nextAssignments;
+  rebuildCleaningView();
+  persistData();
+  showToast('已删除清洁内容');
+}
+
 function persistData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     areas: cloneAreas(AREAS),
@@ -1238,6 +1278,20 @@ function getAreaTaskKeys(area) {
 
 function isDefaultArea(area) {
   return Object.prototype.hasOwnProperty.call(DEFAULT_AREAS, area);
+}
+
+function parseTaskKey(task) {
+  const [area, index] = task.split('::');
+  return { area, index: Number(index) };
+}
+
+function canDeleteTask(task) {
+  const { area, index } = parseTaskKey(task || '');
+  return !!area &&
+    Number.isInteger(index) &&
+    isDefaultArea(area) &&
+    index >= DEFAULT_AREAS[area].length &&
+    index < AREAS[area].length;
 }
 
 function showStats() {
