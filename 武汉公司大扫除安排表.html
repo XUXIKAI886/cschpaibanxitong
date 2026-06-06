@@ -650,6 +650,10 @@
 
 <div class="ctx-menu task-ctx-menu" id="task-ctx-menu"></div>
 
+<div class="ctx-menu" id="area-ctx-menu">
+  <div class="ctx-item" id="area-ctx-delete">🗑 删除区域</div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -685,6 +689,7 @@ let assignments   = {};
 let pendingAssign = null;
 let ctxEmployee   = null;
 let taskCtxTask   = null;
+let ctxArea       = null;
 
 function makeTaskKey(area, index) {
   return `${area}::${index}`;
@@ -718,7 +723,9 @@ function buildAreaSummary() {
   Object.keys(AREAS).forEach((area, i) => {
     const chip = document.createElement('div');
     chip.className = 'area-chip';
+    chip.dataset.area = area;
     chip.innerHTML = `<div class="area-dot" style="background:${AREA_COLORS[i%AREA_COLORS.length]}"></div>${area}・${AREAS[area].length}项`;
+    chip.addEventListener('contextmenu', handleAreaContextMenu);
     el.appendChild(chip);
   });
 }
@@ -875,10 +882,12 @@ function initContextMenu() {
   document.addEventListener('click', () => {
     hideCtx();
     hideTaskCtx();
+    hideAreaCtx();
     cancelPending();
   });
   document.getElementById('ctx-menu').addEventListener('click', e => e.stopPropagation());
   document.getElementById('task-ctx-menu').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('area-ctx-menu').addEventListener('click', e => e.stopPropagation());
   document.getElementById('ctx-rest').addEventListener('click', () => {
     if (ctxEmployee) { moveToRest(ctxEmployee); hideCtx(); }
   });
@@ -888,14 +897,20 @@ function initContextMenu() {
   document.getElementById('ctx-assign').addEventListener('click', () => {
     if (ctxEmployee) { startPending(ctxEmployee); hideCtx(); }
   });
+  document.getElementById('area-ctx-delete').addEventListener('click', () => {
+    if (ctxArea) deleteCustomArea(ctxArea);
+    hideAreaCtx();
+  });
 }
 
 function hideCtx() { document.getElementById('ctx-menu').style.display = 'none'; }
 function hideTaskCtx() { document.getElementById('task-ctx-menu').style.display = 'none'; taskCtxTask = null; }
+function hideAreaCtx() { document.getElementById('area-ctx-menu').style.display = 'none'; ctxArea = null; }
 
 function handleContextMenu(e) {
   e.preventDefault(); e.stopPropagation();
   hideTaskCtx();
+  hideAreaCtx();
   ctxEmployee = e.currentTarget.dataset.employee;
   const isResting = restSet.has(ctxEmployee);
   document.getElementById('ctx-rest').style.display   = isResting ? 'none' : 'flex';
@@ -910,6 +925,7 @@ function handleContextMenu(e) {
 function handleTaskContextMenu(e) {
   e.preventDefault(); e.stopPropagation();
   hideCtx();
+  hideAreaCtx();
   cancelPending();
   const task = e.currentTarget.dataset.task;
   if (FIXED_MAP[task]) { showToast('该任务已固定，无法更改'); return; }
@@ -919,6 +935,20 @@ function handleTaskContextMenu(e) {
   menu.style.display = 'block';
   menu.style.left = Math.max(8, Math.min(e.clientX, window.innerWidth - 200)) + 'px';
   menu.style.top  = Math.max(8, Math.min(e.clientY, window.innerHeight - 360)) + 'px';
+}
+
+function handleAreaContextMenu(e) {
+  e.preventDefault(); e.stopPropagation();
+  hideCtx();
+  hideTaskCtx();
+  cancelPending();
+  const area = e.currentTarget.dataset.area;
+  if (isDefaultArea(area)) { showToast('默认区域不可删除'); return; }
+  ctxArea = area;
+  const menu = document.getElementById('area-ctx-menu');
+  menu.style.display = 'block';
+  menu.style.left = Math.max(8, Math.min(e.clientX, window.innerWidth - 180)) + 'px';
+  menu.style.top  = Math.max(8, Math.min(e.clientY, window.innerHeight - 80)) + 'px';
 }
 
 function renderTaskContextMenu() {
@@ -1115,6 +1145,18 @@ function addTask() {
   showToast('已添加清洁内容');
 }
 
+function deleteCustomArea(area) {
+  if (isDefaultArea(area) || !AREAS[area]) { showToast('该区域不可删除'); return; }
+  getAreaTaskKeys(area).forEach(task => {
+    if (assignments[task]) returnEmpToGrid(assignments[task]);
+    delete assignments[task];
+  });
+  delete AREAS[area];
+  rebuildCleaningView();
+  persistData();
+  showToast('已删除区域');
+}
+
 function persistData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     areas: cloneAreas(AREAS),
@@ -1188,6 +1230,14 @@ function mergeAreas(savedAreas) {
     });
   });
   return merged;
+}
+
+function getAreaTaskKeys(area) {
+  return AREAS[area] ? AREAS[area].map((_, i) => makeTaskKey(area, i)) : [];
+}
+
+function isDefaultArea(area) {
+  return Object.prototype.hasOwnProperty.call(DEFAULT_AREAS, area);
 }
 
 function showStats() {
