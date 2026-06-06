@@ -629,6 +629,8 @@
   <div class="action-bar">
     <button class="btn btn-primary" onclick="randomAssign()">🎲 随机分配</button>
     <button class="btn btn-rust"    onclick="clearAll()">🗑 清空分配</button>
+    <button class="btn btn-fern"    onclick="addArea()">➕ 添加区域</button>
+    <button class="btn btn-fern"    onclick="addTask()">🧽 添加清洁内容</button>
     <button class="btn btn-fern"    onclick="saveData()">💾 保存</button>
     <button class="btn btn-fern"    onclick="loadData()">📂 加载</button>
     <button class="btn btn-amber"   onclick="showStats()">📊 查看统计</button>
@@ -661,7 +663,9 @@ const ALL_EMPLOYEES = [
   '周红莲'
 ];
 
-const AREAS = {
+const STORAGE_KEY = 'ycClean2';
+
+const DEFAULT_AREAS = {
   '大厅':    ['扫地','拖地（第1人）','拖地（第2人）','擦桌椅墙饰饮水机（第1人）','擦桌椅墙饰饮水机（第2人）'],
   '总经理室': ['洗茶具，擦桌椅','擦所有玻璃','扫地拖地'],
   '会议室，仓库，贵宾室':   ['扫地及凳子摆放整齐','擦桌椅门窗及微波炉','拖地'],
@@ -669,6 +673,8 @@ const AREAS = {
   '其他':     ['绿植浇水，换垃圾袋'],
   '大厅角落': ['大厅角落清洁（固定：徐晓辉）']
 };
+
+let AREAS = cloneAreas(DEFAULT_AREAS);
 
 const FIXED_MAP = {
   '前台清洁（固定：吴思湘）':  '吴思湘',
@@ -684,16 +690,20 @@ let ctxEmployee   = null;
 let taskCtxTask   = null;
 
 function init() {
+  const saved = getSavedData();
+  if (saved && isValidAreas(saved.areas)) AREAS = mergeAreas(saved.areas);
   buildAreaSummary();
   buildStaffGrid();
   buildTable();
   setFixedAssignments();
+  if (saved) applySavedData(saved, false);
   initContextMenu();
   updateAll();
 }
 
 function buildAreaSummary() {
   const el = document.getElementById('area-summary');
+  el.innerHTML = '';
   Object.keys(AREAS).forEach((area, i) => {
     const chip = document.createElement('div');
     chip.className = 'area-chip';
@@ -719,6 +729,7 @@ function makeChip(emp, cls) {
 
 function buildTable() {
   const table = document.getElementById('cleaning-table');
+  table.innerHTML = '';
   const areaNames = Object.keys(AREAS);
   const maxRows = Math.max(...Object.values(AREAS).map(a => a.length));
 
@@ -761,6 +772,18 @@ function buildTable() {
     tbody.appendChild(row);
   }
   table.appendChild(tbody);
+}
+
+function rebuildCleaningView() {
+  buildAreaSummary();
+  buildTable();
+  setFixedAssignments();
+  refreshAllCells();
+  updateAll();
+}
+
+function refreshAllCells() {
+  document.querySelectorAll('.task-cell').forEach(c => { if (c.dataset.task) renderCell(c, c.dataset.task); });
 }
 
 function renderCell(cell, task) {
@@ -822,6 +845,7 @@ function assignEmployeeToTask(task, emp) {
   removeFromGrid(emp);
   refreshCell(task);
   updateAll();
+  persistData();
   return true;
 }
 
@@ -831,6 +855,7 @@ function clearAssignment(task) {
   delete assignments[task];
   refreshCell(task);
   updateAll();
+  persistData();
 }
 
 function initContextMenu() {
@@ -916,11 +941,16 @@ function moveToRest(emp) {
     if (assignments[task] === emp && !FIXED_MAP[task]) { delete assignments[task]; refreshCell(task); }
   });
   removeFromGrid(emp);
+  addRestChip(emp);
+  updateAll();
+  persistData();
+}
+
+function addRestChip(emp) {
   const rg = document.getElementById('rest-grid');
   const hint = rg.querySelector('.rest-hint');
   if (hint) hint.remove();
-  rg.appendChild(makeChip(emp,'rest'));
-  updateAll();
+  if (!rg.querySelector(`[data-employee="${emp}"]`)) rg.appendChild(makeChip(emp,'rest'));
 }
 
 function moveToWork(emp) {
@@ -930,6 +960,7 @@ function moveToWork(emp) {
   if (!rg.querySelector('.staff-chip')) rg.innerHTML = '<span class="rest-hint">暂无休息人员</span>';
   returnEmpToGrid(emp);
   updateAll();
+  persistData();
 }
 
 function startPending(emp) {
@@ -1006,8 +1037,9 @@ function randomAssign() {
       removeFromGrid(emp);
     }
   });
-  document.querySelectorAll('.task-cell').forEach(c => { if (c.dataset.task) renderCell(c, c.dataset.task); });
+  refreshAllCells();
   updateAll();
+  persistData();
   showToast('随机分配完成！');
 }
 
@@ -1016,8 +1048,9 @@ function clearAll() {
   buildStaffGrid();
   Object.values(FIXED_MAP).forEach(e => removeFromGrid(e));
   restSet.forEach(e => removeFromGrid(e));
-  document.querySelectorAll('.task-cell').forEach(c => { if (c.dataset.task) renderCell(c, c.dataset.task); });
+  refreshAllCells();
   updateAll();
+  persistData();
   showToast('已清空所有分配');
 }
 
@@ -1027,27 +1060,133 @@ function shuffle(arr) {
 }
 
 function saveData() {
-  localStorage.setItem('ycClean2', JSON.stringify({ assignments, rest:[...restSet] }));
+  persistData();
   showToast('保存成功！');
 }
 
 function loadData() {
-  const raw = localStorage.getItem('ycClean2');
-  if (!raw) { showToast('暂无保存数据'); return; }
-  const data = JSON.parse(raw);
+  const data = getSavedData();
+  if (!data) { showToast('暂无保存数据'); return; }
+  applySavedData(data, true);
+  showToast('加载成功！');
+}
+
+function addArea() {
+  const area = (prompt('请输入新增区域名称') || '').trim();
+  if (!area) return;
+  if (AREAS[area]) { showToast('该区域已存在'); return; }
+
+  const task = (prompt(`请输入「${area}」的第一个清洁内容`) || '').trim();
+  if (!task) return;
+  if (isTaskNameInUse(task)) { showToast('清洁内容名称已存在，请换一个名称'); return; }
+
+  AREAS[area] = [task];
+  rebuildCleaningView();
+  persistData();
+  showToast('已添加区域');
+}
+
+function addTask() {
+  const areaInput = (prompt(`请输入要添加清洁内容的区域名称：\n${Object.keys(AREAS).join('、')}`) || '').trim();
+  if (!areaInput) return;
+  const area = Object.keys(AREAS).find(name => name === areaInput);
+  if (!area) { showToast('未找到该区域'); return; }
+
+  const task = (prompt(`请输入「${area}」新增的清洁内容`) || '').trim();
+  if (!task) return;
+  if (isTaskNameInUse(task)) { showToast('清洁内容名称已存在，请换一个名称'); return; }
+
+  AREAS[area].push(task);
+  rebuildCleaningView();
+  persistData();
+  showToast('已添加清洁内容');
+}
+
+function isTaskNameInUse(task) {
+  return Object.values(AREAS).some(tasks => tasks.includes(task));
+}
+
+function persistData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    areas: cloneAreas(AREAS),
+    assignments,
+    rest: [...restSet]
+  }));
+}
+
+function getSavedData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+  try { return JSON.parse(raw); }
+  catch (err) { return null; }
+}
+
+function applySavedData(data, rebuild) {
+  if (isValidAreas(data.areas)) AREAS = mergeAreas(data.areas);
+  if (rebuild) rebuildCleaningView();
+
   const validEmployees = new Set(ALL_EMPLOYEES);
-  const validTasks = new Set(Object.values(AREAS).flat());
-  clearAll();
-  (data.rest || []).filter(emp => validEmployees.has(emp)).forEach(moveToRest);
+  const fixedEmployees = new Set(Object.values(FIXED_MAP));
+  const validTasks = new Set(getTaskKeys());
+  const usedEmployees = new Set(Object.values(FIXED_MAP));
+
+  restSet = new Set();
+  assignments = {};
+  document.getElementById('rest-grid').innerHTML = '<span class="rest-hint">暂无休息人员</span>';
+  buildStaffGrid();
+  setFixedAssignments();
+
+  (data.rest || [])
+    .filter(emp => validEmployees.has(emp) && !fixedEmployees.has(emp))
+    .forEach(emp => {
+      restSet.add(emp);
+      removeFromGrid(emp);
+      addRestChip(emp);
+    });
+
   Object.entries(data.assignments || {}).forEach(([task, emp]) => {
-    if (validTasks.has(task) && validEmployees.has(emp) && !FIXED_MAP[task]) {
+    if (validTasks.has(task) && validEmployees.has(emp) && !restSet.has(emp) && !usedEmployees.has(emp) && !FIXED_MAP[task]) {
       assignments[task] = emp;
+      usedEmployees.add(emp);
       removeFromGrid(emp);
     }
   });
-  document.querySelectorAll('.task-cell').forEach(c => { if (c.dataset.task) renderCell(c, c.dataset.task); });
+  refreshAllCells();
   updateAll();
-  showToast('加载成功！');
+}
+
+function cloneAreas(areas) {
+  return Object.fromEntries(Object.entries(areas).map(([area, tasks]) => [area, [...tasks]]));
+}
+
+function isValidAreas(areas) {
+  return areas && typeof areas === 'object' && !Array.isArray(areas) &&
+    Object.entries(areas).every(([area, tasks]) =>
+      typeof area === 'string' && area.trim() &&
+      Array.isArray(tasks) &&
+      tasks.every(task => typeof task === 'string' && task.trim())
+    );
+}
+
+function mergeAreas(savedAreas) {
+  const merged = cloneAreas(DEFAULT_AREAS);
+  Object.entries(savedAreas).forEach(([area, tasks]) => {
+    const cleanArea = area.trim();
+    if (!cleanArea) return;
+    if (!merged[cleanArea]) merged[cleanArea] = [];
+    tasks.map(task => task.trim()).filter(Boolean).forEach(task => {
+      if (!isTaskNameInUseFor(task, merged)) merged[cleanArea].push(task);
+    });
+  });
+  return merged;
+}
+
+function isTaskNameInUseFor(task, areas) {
+  return Object.values(areas).some(tasks => tasks.includes(task));
+}
+
+function getTaskKeys() {
+  return Object.values(AREAS).flat();
 }
 
 function showStats() {
