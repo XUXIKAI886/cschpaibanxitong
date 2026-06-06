@@ -497,6 +497,11 @@
     }
     .ctx-item:hover { background: var(--sand); color: var(--moss); }
     .ctx-sep { height: 1px; background: var(--parch); margin: 0.3rem 0; }
+    .task-ctx-menu {
+      min-width: 180px;
+      max-height: min(360px, calc(100vh - 1rem));
+      overflow-y: auto;
+    }
 
     /* TOAST */
     .toast {
@@ -550,7 +555,7 @@
   <!-- INSTRUCTIONS -->
   <div class="instructions">
     <div class="instr-item"><div class="instr-dot"></div><span><strong>设为休息：</strong>右键点击员工 → 设为当日休息</span></div>
-    <div class="instr-item"><div class="instr-dot"></div><span><strong>分配任务：</strong>右键点击员工 → 分配到任务 → 点击目标格</span></div>
+    <div class="instr-item"><div class="instr-dot"></div><span><strong>分配任务：</strong>右键点击员工 → 分配到任务 → 点击目标格，或右键任务格 → 选择员工</span></div>
     <div class="instr-item"><div class="instr-dot"></div><span><strong>取消分配：</strong>双击已分配的任务格</span></div>
     <div class="instr-item"><div class="instr-dot"></div><span><strong>随机分配：</strong>一键自动为所有上班员工分配任务</span></div>
   </div>
@@ -571,7 +576,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-num rust" id="stat-rest">0</div>
-      <div class="stat-label">周六休息</div>
+      <div class="stat-label">当日休息</div>
     </div>
     <div class="stat-card">
       <div class="stat-num" id="stat-free">12</div>
@@ -606,7 +611,7 @@
   <div class="table-container">
     <div class="section-label" style="margin-bottom:1rem;">
       <div class="sec-icon g">📋</div>
-      <span class="sec-text">清洁任务分配表格 · 双击已分配格可取消</span>
+      <span class="sec-text">清洁任务分配表格 · 右键任务格可选择员工 · 双击已分配格可取消</span>
     </div>
     <table class="cleaning-table" id="cleaning-table"></table>
   </div>
@@ -641,6 +646,8 @@
   <div class="ctx-item" id="ctx-assign">➡️ 分配到任务</div>
 </div>
 
+<div class="ctx-menu task-ctx-menu" id="task-ctx-menu"></div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -671,6 +678,7 @@ let restSet       = new Set();
 let assignments   = {};
 let pendingAssign = null;
 let ctxEmployee   = null;
+let taskCtxTask   = null;
 
 function makeTaskKey(area, index) {
   return `${area}::${index}`;
@@ -752,6 +760,7 @@ function buildTable() {
         cell.dataset.area = area;
         cell.addEventListener('dblclick', () => { if (!FIXED_MAP[task]) clearAssignment(task); });
         cell.addEventListener('click', handleCellClick);
+        cell.addEventListener('contextmenu', handleTaskContextMenu);
         renderCell(cell, task);
         td.appendChild(cell);
       } else {
@@ -803,13 +812,30 @@ function handleCellClick(e) {
   if (!pendingAssign) return;
   const cell = e.currentTarget;
   const task = cell.dataset.task;
-  if (FIXED_MAP[task]) { showToast('该任务已固定，无法更改'); cancelPending(); return; }
-  if (assignments[task]) returnEmpToGrid(assignments[task]);
-  assignments[task] = pendingAssign;
-  removeFromGrid(pendingAssign);
+  const emp = pendingAssign;
+  if (assignEmployeeToTask(task, emp)) showToast(`已将「${emp}」分配到该任务`);
   cancelPending();
+}
+
+function assignEmployeeToTask(task, emp) {
+  if (FIXED_MAP[task]) { showToast('该任务已固定，无法更改'); return false; }
+  if (restSet.has(emp)) { showToast('当日休息人员不参与分配'); return false; }
+  if (Object.values(FIXED_MAP).includes(emp)) { showToast('固定负责人不可分配到其它任务'); return false; }
+
+  const oldTask = Object.keys(assignments).find(t => assignments[t] === emp && !FIXED_MAP[t]);
+  if (oldTask && oldTask !== task) {
+    delete assignments[oldTask];
+    refreshCell(oldTask);
+  }
+
+  const oldEmp = assignments[task];
+  if (oldEmp && oldEmp !== emp) returnEmpToGrid(oldEmp);
+
+  assignments[task] = emp;
+  removeFromGrid(emp);
   refreshCell(task);
   updateAll();
+  return true;
 }
 
 function clearAssignment(task) {
@@ -822,9 +848,12 @@ function clearAssignment(task) {
 
 function initContextMenu() {
   document.addEventListener('click', () => {
-    document.getElementById('ctx-menu').style.display = 'none';
+    hideCtx();
+    hideTaskCtx();
     cancelPending();
   });
+  document.getElementById('ctx-menu').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('task-ctx-menu').addEventListener('click', e => e.stopPropagation());
   document.getElementById('ctx-rest').addEventListener('click', () => {
     if (ctxEmployee) { moveToRest(ctxEmployee); hideCtx(); }
   });
@@ -837,9 +866,11 @@ function initContextMenu() {
 }
 
 function hideCtx() { document.getElementById('ctx-menu').style.display = 'none'; }
+function hideTaskCtx() { document.getElementById('task-ctx-menu').style.display = 'none'; taskCtxTask = null; }
 
 function handleContextMenu(e) {
   e.preventDefault(); e.stopPropagation();
+  hideTaskCtx();
   ctxEmployee = e.currentTarget.dataset.employee;
   const isResting = restSet.has(ctxEmployee);
   document.getElementById('ctx-rest').style.display   = isResting ? 'none' : 'flex';
@@ -849,6 +880,47 @@ function handleContextMenu(e) {
   menu.style.display = 'block';
   menu.style.left = Math.min(e.clientX, window.innerWidth  - 180) + 'px';
   menu.style.top  = Math.min(e.clientY, window.innerHeight - 120) + 'px';
+}
+
+function handleTaskContextMenu(e) {
+  e.preventDefault(); e.stopPropagation();
+  hideCtx();
+  cancelPending();
+  const task = e.currentTarget.dataset.task;
+  if (FIXED_MAP[task]) { showToast('该任务已固定，无法更改'); return; }
+  taskCtxTask = task;
+  renderTaskContextMenu();
+  const menu = document.getElementById('task-ctx-menu');
+  menu.style.display = 'block';
+  menu.style.left = Math.max(8, Math.min(e.clientX, window.innerWidth - 200)) + 'px';
+  menu.style.top  = Math.max(8, Math.min(e.clientY, window.innerHeight - 360)) + 'px';
+}
+
+function renderTaskContextMenu() {
+  const menu = document.getElementById('task-ctx-menu');
+  const fixedEmps = new Set(Object.values(FIXED_MAP));
+  const employees = ALL_EMPLOYEES.filter(emp => !restSet.has(emp) && !fixedEmps.has(emp));
+  menu.innerHTML = '';
+
+  if (!employees.length) {
+    const empty = document.createElement('div');
+    empty.className = 'ctx-item';
+    empty.textContent = '暂无可分配员工';
+    menu.appendChild(empty);
+    return;
+  }
+
+  employees.forEach(emp => {
+    const item = document.createElement('div');
+    item.className = 'ctx-item';
+    item.dataset.employee = emp;
+    item.textContent = `👤 ${emp}`;
+    item.addEventListener('click', () => {
+      if (taskCtxTask && assignEmployeeToTask(taskCtxTask, emp)) showToast(`已将「${emp}」分配到该任务`);
+      hideTaskCtx();
+    });
+    menu.appendChild(item);
+  });
 }
 
 function moveToRest(emp) {
@@ -1002,7 +1074,7 @@ function showStats() {
     `可分配员工：${ALL_EMPLOYEES.length - new Set(Object.values(FIXED_MAP)).size}人`,
     `固定负责人：${[...new Set(Object.values(FIXED_MAP))].join('、')}`,
     `可分配上班：${ALL_EMPLOYEES.length-restSet.size-new Set(Object.values(FIXED_MAP)).size}人`,
-    `周六休息：${restSet.size}人  ${restSet.size?'（'+[...restSet].join('、')+'）':''}`,
+    `当日休息：${restSet.size}人  ${restSet.size?'（'+[...restSet].join('、')+'）':''}`,
     `已分配：${Object.keys(counts).length}人`,
     '',
     '任务分配明细：',
