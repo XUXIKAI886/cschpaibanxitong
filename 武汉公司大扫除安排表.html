@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>呈尚策划 · 宜昌大扫除安排表</title>
+  <title>呈尚策划 · 武汉公司大扫除安排表</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -532,11 +532,11 @@
     <div>
       <div class="hero-icon">🧹</div>
       <div class="hero-company">呈尚策划公司</div>
-      <h1 class="hero-title">宜昌大扫除安排表</h1>
-      <p class="hero-subtitle" id="hero-subtitle">宜昌清洁任务分配系统</p>
+      <h1 class="hero-title">武汉公司大扫除安排表</h1>
+      <p class="hero-subtitle" id="hero-subtitle">武汉清洁任务分配系统</p>
     </div>
     <div class="hero-badges">
-      <span class="stat-pill">宜昌公司</span>
+      <span class="stat-pill">武汉公司</span>
       <span class="stat-pill amber" id="progress-pill">已分配 0 / 14</span>
       <a href="index.html" class="home-btn">⌂ 返回首页</a>
     </div>
@@ -558,11 +558,11 @@
   <!-- STATS -->
   <div class="stats-bar">
     <div class="stat-card">
-      <div class="stat-num" id="stat-total">17</div>
+      <div class="stat-num" id="stat-total">13</div>
       <div class="stat-label">全部员工</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num" id="stat-working">17</div>
+      <div class="stat-num" id="stat-working">13</div>
       <div class="stat-label">上班人数</div>
     </div>
     <div class="stat-card">
@@ -574,7 +574,7 @@
       <div class="stat-label">周六休息</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num" id="stat-free">17</div>
+      <div class="stat-num" id="stat-free">13</div>
       <div class="stat-label">待分配人员</div>
     </div>
   </div>
@@ -646,26 +646,23 @@
 
 <script>
 const ALL_EMPLOYEES = [
-  '胡双双','王涛','梁智','朱文雯',
-  '王清月','陶思雨','杨有淇','冯杉杉',
-  '吴思湘','陈吉姝','袁丽妮',
-  '陈冉','徐晓辉','秦金城',
-  '赵春艳','周广鑫',
-  '周红莲'
+  '王娟','王盼','李梓萱','向文强',
+  '武力力','柯松','韩大武','张兴岚',
+  '李晨雨','阳莲心','屈维涛','肖锐',
+  '盛亚娥'
 ];
 
 const AREAS = {
-  '大厅':    ['扫地','拖地（第1人）','拖地（第2人）','擦桌椅墙饰饮水机（第1人）','擦桌椅墙饰饮水机（第2人）'],
-  '总经理室': ['洗茶具，擦桌椅','擦所有玻璃','扫地拖地'],
-  '会议室，仓库，贵宾室':   ['扫地及凳子摆放整齐','擦桌椅门窗及微波炉','拖地'],
-  '前台':     ['前台清洁（固定：吴思湘）'],
-  '其他':     ['绿植浇水，换垃圾袋'],
-  '大厅角落': ['大厅角落清洁（固定：徐晓辉）']
+  '办公区': ['地面吸尘','擦桌椅及摆放','擦饮水机','擦冰箱及清理'],
+  '财务办公室': ['洗茶具','擦桌椅、沙发及物品归位','地面吸尘'],
+  '会议室': ['地面吸尘','擦桌椅及摆放'],
+  '人事办公室': ['人事办公室清洁（固定：盛亚娥）'],
+  '其它': ['绿植浇水（换水）'],
+  '休息区': ['擦荣誉墙','擦桌椅及摆放','地面吸尘']
 };
 
 const FIXED_MAP = {
-  '前台清洁（固定：吴思湘）':  '吴思湘',
-  '大厅角落清洁（固定：徐晓辉）': '徐晓辉'
+  '人事办公室清洁（固定：盛亚娥）': '盛亚娥'
 };
 
 const AREA_COLORS = ['#3d5a3e','#5c7c5d','#8aab6e','#c97c2e','#e8a645','#b45b3c','#7a6a50'];
@@ -891,7 +888,7 @@ function updateAll() {
   const freeCount   = Math.max(0, workCount - assignedEmps.size);
   const totalTasks  = Object.values(AREAS).reduce((s,a)=>s+a.length,0);
 
-  document.getElementById('hero-subtitle').textContent = `宜昌清洁任务分配系统 · 共 ${ALL_EMPLOYEES.length} 名员工 · ${totalTasks} 个清洁任务`;
+  document.getElementById('hero-subtitle').textContent = `武汉清洁任务分配系统 · 共 ${ALL_EMPLOYEES.length} 名员工 · ${totalTasks} 个清洁任务`;
   document.getElementById('stat-total').textContent   = ALL_EMPLOYEES.length;
   document.getElementById('stat-working').textContent = workCount;
   document.getElementById('stat-assigned').textContent= assignedEmps.size;
@@ -955,12 +952,12 @@ function shuffle(arr) {
 }
 
 function saveData() {
-  localStorage.setItem('ycClean2', JSON.stringify({ assignments, rest:[...restSet] }));
+  localStorage.setItem('whClean2', JSON.stringify({ assignments, rest:[...restSet] }));
   showToast('保存成功！');
 }
 
 function loadData() {
-  const raw = localStorage.getItem('ycClean2');
+  const raw = localStorage.getItem('whClean2');
   if (!raw) { showToast('暂无保存数据'); return; }
   const data = JSON.parse(raw);
   const validEmployees = new Set(ALL_EMPLOYEES);
@@ -1002,7 +999,7 @@ function exportExcel() {
   const ws=XLSX.utils.aoa_to_sheet(rows);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'大扫除安排');
-  XLSX.writeFile(wb,'呈尚策划宜昌大扫除安排表.xlsx');
+  XLSX.writeFile(wb,'呈尚策划武汉公司大扫除安排表.xlsx');
   showToast('导出成功！');
 }
 

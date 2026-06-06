@@ -158,9 +158,9 @@
 
         .nav-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-            gap: 2.5rem;
-            max-width: 1100px;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 1320px;
             margin: 0 auto;
         }
 
@@ -446,6 +446,10 @@
         .nav-card:nth-child(2) {
             animation-delay: 0.2s;
         }
+
+        .nav-card:nth-child(3) {
+            animation-delay: 0.3s;
+        }
     </style>
 </head>
 <body>
@@ -457,7 +461,7 @@
                     <i class="fas fa-building"></i>
                     呈尚策划公司
                 </h1>
-                <p class="header-subtitle">运营部+销售部随机排班一键生成，公平公正公开</p>
+                <p class="header-subtitle">运营排班与多地大扫除安排一站式管理</p>
             </div>
         </div>
 
@@ -496,29 +500,57 @@
                     </div>
                 </div>
 
-                <!-- 销售部大扫除系统卡片 -->
+                <!-- 宜昌大扫除系统卡片 -->
                 <div class="nav-card">
                     <div class="card-header">
                         <div class="card-icon">
                             <i class="fas fa-broom"></i>
                         </div>
-                        <div class="card-title">公司大扫除安排表</div>
-                        <div class="card-subtitle">Company Cleaning Assignment System</div>
+                        <div class="card-title">宜昌大扫除安排表</div>
+                        <div class="card-subtitle">Yichang Cleaning Assignment System</div>
                     </div>
                     <div class="card-body">
                         <div class="card-description">
-                            专门为公司设计的清洁任务分配管理系统，通过直观的右键菜单操作将23名公司员工分配到7个区域的具体清洁任务中，确保办公环境整洁有序。特别优化了Tauri环境的兼容性。
+                            宜昌公司清洁任务分配管理系统，通过右键菜单操作将员工分配到各区域清洁任务中，支持固定负责人、随机分配、保存加载和Excel导出。
                         </div>
                         <ul class="card-features">
                             <li><i class="fas fa-check-circle"></i> 右键菜单式人员任务分配</li>
-                            <li><i class="fas fa-check-circle"></i> 23名公司员工，17个具体任务</li>
-                            <li><i class="fas fa-check-circle"></i> 7个清洁区域全覆盖</li>
+                            <li><i class="fas fa-check-circle"></i> 17名公司员工，14个具体任务</li>
+                            <li><i class="fas fa-check-circle"></i> 6个清洁区域全覆盖</li>
                             <li><i class="fas fa-check-circle"></i> 随机智能分配算法</li>
                             <li><i class="fas fa-check-circle"></i> 数据保存和统计功能</li>
                             <li><i class="fas fa-check-circle"></i> 固定分配和未分配人员显示</li>
                         </ul>
                         <a href="销售部大扫除安排表.html" class="card-button">
-                            进入大扫除系统
+                            进入宜昌大扫除
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 武汉大扫除系统卡片 -->
+                <div class="nav-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-broom"></i>
+                        </div>
+                        <div class="card-title">武汉公司大扫除安排表</div>
+                        <div class="card-subtitle">Wuhan Cleaning Assignment System</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-description">
+                            武汉公司清洁任务分配管理系统，沿用宜昌大扫除页面结构，覆盖办公区、财务办公室、会议室、人事办公室、其它和休息区。
+                        </div>
+                        <ul class="card-features">
+                            <li><i class="fas fa-check-circle"></i> 右键菜单式人员任务分配</li>
+                            <li><i class="fas fa-check-circle"></i> 13名公司员工，14个具体任务</li>
+                            <li><i class="fas fa-check-circle"></i> 6个清洁区域全覆盖</li>
+                            <li><i class="fas fa-check-circle"></i> 人事办公室固定分配</li>
+                            <li><i class="fas fa-check-circle"></i> 随机分配、保存和统计功能</li>
+                            <li><i class="fas fa-check-circle"></i> Excel导出清洁安排</li>
+                        </ul>
+                        <a href="武汉公司大扫除安排表.html" class="card-button">
+                            进入武汉大扫除
                             <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
