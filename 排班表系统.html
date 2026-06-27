@@ -334,6 +334,70 @@
     color: var(--ink-2);
     padding-left: 32px;
   }
+  .employee-manage {
+    padding-left: 32px;
+    display: grid;
+    gap: 10px;
+  }
+  .employee-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .employee-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 6px 10px 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--ink-2);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .employee-chip button {
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 50%;
+    background: #fff0f4;
+    color: var(--pink-2);
+    cursor: pointer;
+    line-height: 18px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .employee-add-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) auto;
+    gap: 8px;
+  }
+  .employee-add-row input {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    color: var(--ink-2);
+    font: inherit;
+    outline: none;
+  }
+  .employee-add-row input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124,92,255,.12);
+  }
+  .employee-add-row button {
+    border: none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    background: linear-gradient(135deg, #8a6bff 0%, #6a47ff 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
   .group .rules {
     font-size: 13px;
     color: var(--muted);
@@ -673,7 +737,13 @@
   <div class="group-row">
     <div class="group">
       <div class="gh"><span class="gic"><i class="fas fa-users"></i></span>运营组</div>
-      <div class="members">杨有淇、陈吉舒、王涛、王清月、袁丽妮、陈冉</div>
+      <div class="employee-manage" id="employeeManage">
+        <div class="employee-list" id="employeeList"></div>
+        <div class="employee-add-row">
+          <input id="employeeNameInput" type="text" autocomplete="off" placeholder="新增运营人员姓名">
+          <button type="button" onclick="addScheduleEmployee().catch(error => toast(error.message || '新增运营人员失败'))"><i class="fas fa-plus"></i> 新增</button>
+        </div>
+      </div>
     </div>
     <div class="group">
       <div class="gh"><span class="gic"><i class="fas fa-book"></i></span>智能规则</div>
@@ -739,6 +809,7 @@
     dayNames = system.dayNames || ['星期一','星期二','星期三','星期四','星期五','星期六','星期天'];
     scheduleRules = system.rules || scheduleRules;
     applyDefaultSelectedDays(system.defaultSelectedDayIndexes || [5, 6]);
+    renderEmployeeManage();
   }
 
   function applyDefaultSelectedDays(indexes) {
@@ -755,6 +826,56 @@
     img.alt = name;
     img.src = `头像/${encodeURIComponent(name)}.png`;
     return img;
+  }
+
+  function renderEmployeeManage() {
+    const list = document.getElementById('employeeList');
+    if (!list) return;
+    list.innerHTML = '';
+    employees.forEach(name => {
+      const chip = document.createElement('span');
+      chip.className = 'employee-chip';
+      chip.textContent = name;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.action = 'delete-employee';
+      button.dataset.employee = name;
+      button.title = `删除${name}`;
+      button.textContent = '×';
+      button.addEventListener('click', () => deleteScheduleEmployee(name));
+      chip.appendChild(button);
+      list.appendChild(chip);
+    });
+  }
+
+  async function reloadScheduleView() {
+    await loadScheduleSystem();
+    initScheduleTable();
+    await loadLatestSchedule();
+    updateGenBtn();
+  }
+
+  async function addScheduleEmployee() {
+    const input = document.getElementById('employeeNameInput');
+    const name = input ? input.value.trim() : '';
+    if (!name) { toast('请输入运营人员姓名'); return; }
+    await apiRequest('/api/schedule-systems/operations/employees', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    });
+    if (input) input.value = '';
+    await reloadScheduleView();
+    toast('已新增运营人员 ✓');
+  }
+
+  async function deleteScheduleEmployee(name) {
+    if (!name) return;
+    if (!confirm(`确定删除运营人员「${name}」吗？`)) return;
+    await apiRequest(`/api/schedule-systems/operations/employees/${encodeURIComponent(name)}`, {
+      method: 'DELETE'
+    });
+    await reloadScheduleView();
+    toast('已删除运营人员 ✓');
   }
 
   // ───────── init table ─────────
@@ -1089,6 +1210,15 @@
       initDragAndDrop();
       initDaySelector();
       initContextMenu();
+      const employeeInput = document.getElementById('employeeNameInput');
+      if (employeeInput) {
+        employeeInput.addEventListener('keydown', event => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            addScheduleEmployee().catch(error => toast(error.message || '新增运营人员失败'));
+          }
+        });
+      }
       updateGenBtn();
       await loadLatestSchedule();
     } catch (error) {

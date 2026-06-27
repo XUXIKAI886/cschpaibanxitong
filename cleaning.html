@@ -834,6 +834,15 @@ function applyCompanyData(company) {
   });
 }
 
+async function reloadCurrentCompany() {
+  currentCompany = await apiRequest(`/api/companies/${encodeURIComponent(currentCompany.key)}`);
+  applyCompanyData(currentCompany);
+  restSet = new Set([...restSet].filter(employee => ALL_EMPLOYEES.includes(employee)));
+  assignments = filterAssignmentsForCurrentData(assignments);
+  rebuildCleaningView();
+  persistData();
+}
+
 function init() {
   const saved = getSavedData();
   buildAreaSummary();
@@ -923,8 +932,15 @@ function buildTable() {
 
 function rebuildCleaningView() {
   buildAreaSummary();
+  buildStaffGrid();
   buildTable();
   setFixedAssignments();
+  document.getElementById('rest-grid').innerHTML = '<span class="rest-hint">暂无休息人员</span>';
+  restSet.forEach(emp => {
+    removeFromGrid(emp);
+    addRestChip(emp);
+  });
+  Object.values(assignments).forEach(emp => removeFromGrid(emp));
   refreshAllCells();
   updateAll();
 }
@@ -1119,7 +1135,7 @@ function renderTaskContextMenu() {
     del.className = 'ctx-item';
     del.textContent = '🗑 删除清洁内容';
     del.addEventListener('click', () => {
-      if (taskCtxTask) deleteCustomTask(taskCtxTask);
+      if (taskCtxTask) deleteCustomTask(taskCtxTask).catch(error => showToast(error.message || '删除清洁内容失败'));
       hideTaskCtx();
     });
     menu.appendChild(del);
@@ -1382,13 +1398,11 @@ async function addArea() {
   const task = result.task;
   if (!task) return;
 
-  currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas`, {
+  await apiRequest(`/api/companies/${currentCompany.key}/areas`, {
     method: 'POST',
     body: JSON.stringify({ name: area, firstTaskName: task })
   });
-  applyCompanyData(currentCompany);
-  rebuildCleaningView();
-  persistData();
+  await reloadCurrentCompany();
   showToast('已添加区域并同步云端');
 }
 
@@ -1406,13 +1420,11 @@ async function addEmployee() {
   if (!name) return;
   if (ALL_EMPLOYEES.includes(name)) { showToast('该人员已存在'); return; }
 
-  currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/employees`, {
+  await apiRequest(`/api/companies/${currentCompany.key}/employees`, {
     method: 'POST',
     body: JSON.stringify({ name })
   });
-  applyCompanyData(currentCompany);
-  rebuildCleaningView();
-  persistData();
+  await reloadCurrentCompany();
   showToast('已添加人员并同步云端');
 }
 
@@ -1421,16 +1433,14 @@ async function deleteEmployee(employeeName) {
     showToast('固定负责人不可删除');
     return;
   }
-  currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/employees/${encodeURIComponent(employeeName)}`, {
+  await apiRequest(`/api/companies/${currentCompany.key}/employees/${encodeURIComponent(employeeName)}`, {
     method: 'DELETE'
   });
   restSet.delete(employeeName);
   Object.keys(assignments).forEach(task => {
     if (assignments[task] === employeeName) delete assignments[task];
   });
-  applyCompanyData(currentCompany);
-  rebuildCleaningView();
-  persistData();
+  await reloadCurrentCompany();
   showToast('已删除人员并同步云端');
 }
 
@@ -1456,13 +1466,11 @@ async function addTask() {
   const task = result.task;
   if (!task) return;
 
-  currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(area)}/tasks`, {
+  await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(area)}/tasks`, {
     method: 'POST',
     body: JSON.stringify({ name: task })
   });
-  applyCompanyData(currentCompany);
-  rebuildCleaningView();
-  persistData();
+  await reloadCurrentCompany();
   showToast('已添加清洁内容并同步云端');
 }
 
@@ -1472,12 +1480,10 @@ async function deleteCustomArea(area) {
     if (assignments[task]) returnEmpToGrid(assignments[task]);
     delete assignments[task];
   });
-  currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(area)}`, {
+  await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(area)}`, {
     method: 'DELETE'
   });
-  applyCompanyData(currentCompany);
-  rebuildCleaningView();
-  persistData();
+  await reloadCurrentCompany();
   showToast('已删除区域并同步云端');
 }
 
@@ -1487,14 +1493,12 @@ async function deleteCustomTask(task) {
   if (!area || !AREAS[area]) return;
   const taskName = AREAS[area][index];
   const deletedEmp = assignments[task];
-  currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(area)}/tasks/${encodeURIComponent(taskName)}`, {
+  await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(area)}/tasks/${encodeURIComponent(taskName)}`, {
     method: 'DELETE'
   });
   if (deletedEmp) returnEmpToGrid(deletedEmp);
-  applyCompanyData(currentCompany);
   assignments = filterAssignmentsForCurrentData(assignments);
-  rebuildCleaningView();
-  persistData();
+  await reloadCurrentCompany();
   showToast('已删除清洁内容并同步云端');
 }
 

@@ -42,6 +42,22 @@ test('cleaning.html keeps the original cleaning page UI structure', () => {
   assert.doesNotMatch(html, /id="employee-form"/);
 });
 
+test('cleaning.html handles async right-click deletes before closing menu', () => {
+  const html = readRoot('cleaning.html');
+  assert.match(html, /deleteEmployee\(ctxEmployee\)\.catch/);
+  assert.match(html, /deleteCustomArea\(ctxArea\)\.catch/);
+  assert.match(html, /deleteCustomTask\(taskCtxTask\)\.catch/);
+  assert.match(html, /async function reloadCurrentCompany/);
+  assert.match(html, /await reloadCurrentCompany\(\)/);
+});
+
+test('cleaning.html rebuilds employee pools after remote data changes', () => {
+  const html = readRoot('cleaning.html');
+  const match = html.match(/function rebuildCleaningView\(\) \{([\s\S]*?)\n\}/);
+  assert.ok(match, 'rebuildCleaningView should exist');
+  assert.match(match[1], /buildStaffGrid\(\)/);
+});
+
 test('operations schedule page loads config and saves records through API', () => {
   const html = readRoot('排班表系统.html');
   assert.match(html, /async function loadScheduleSystem/);
@@ -49,4 +65,14 @@ test('operations schedule page loads config and saves records through API', () =
   assert.match(html, /\/api\/schedule-systems\/operations/);
   assert.match(html, /\/records\/latest/);
   assert.doesNotMatch(html, /const employees = \[/);
+});
+
+test('operations schedule page can add and delete employees through API', () => {
+  const html = readRoot('排班表系统.html');
+  assert.match(html, /async function addScheduleEmployee/);
+  assert.match(html, /async function deleteScheduleEmployee/);
+  assert.match(html, /\/api\/schedule-systems\/operations\/employees/);
+  assert.match(html, /id="employeeManage"/);
+  assert.match(html, /addScheduleEmployee\(\)/);
+  assert.match(html, /dataset\.action = 'delete-employee'/);
 });
