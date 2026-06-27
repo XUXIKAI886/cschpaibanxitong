@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>呈尚策划 · 大扫除安排表</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --ink: #243025;
+      --muted: #6b7468;
+      --paper: #fffdf8;
+      --wash: #f4f6ef;
+      --line: #d9dfd2;
+      --leaf: #355a38;
+      --leaf-soft: #5f7f5d;
+      --gold: #d99532;
+      --clay: #a95438;
+      --mist: #eef3e8;
+      --shadow: 0 14px 36px rgba(38, 72, 42, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--wash);
+      color: var(--ink);
+      font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, select { font: inherit; }
+
+    .app {
+      width: min(1440px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 36px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .title p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .switcher {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .switcher button,
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      min-height: 38px;
+    }
+
+    .switcher button.active,
+    .btn.primary {
+      background: var(--leaf);
+      border-color: var(--leaf);
+      color: #fff;
+    }
+
+    .btn.warning {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: #fff;
+    }
+
+    .btn.danger {
+      background: var(--clay);
+      border-color: var(--clay);
+      color: #fff;
+    }
+
+    .btn.icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      line-height: 1.3;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .form-row.two {
+      grid-template-columns: minmax(0, .7fr) minmax(0, 1fr) auto;
+    }
+
+    input, select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 28px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      user-select: none;
+    }
+
+    .chip.clickable { cursor: pointer; }
+    .chip.rest { opacity: .58; background: var(--mist); }
+    .chip.fixed { border-color: #e0b666; background: #fff3d5; }
+
+    .chip button {
+      border: 0;
+      background: transparent;
+      color: var(--clay);
+      cursor: pointer;
+      padding: 0;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .area {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .area-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      background: #eef3e8;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .area-name {
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .task-card {
+      min-height: 138px;
+      display: grid;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fbfcf7;
+    }
+
+    .task-title {
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .assigned {
+      min-height: 24px;
+      color: var(--leaf);
+      font-weight: 800;
+    }
+
+    .task-actions {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .section-gap { margin-top: 18px; }
+
+    @media (max-width: 900px) {
+      .app { width: min(100% - 20px, 760px); padding-top: 14px; }
+      .topbar, .grid { grid-template-columns: 1fr; }
+      .form-row.two { grid-template-columns: 1fr; }
+      .task-actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="title">
+        <h1 id="page-title">大扫除安排表</h1>
+        <p id="page-subtitle">正在加载云端数据</p>
+      </div>
+      <nav class="switcher" id="company-switcher" aria-label="公司切换"></nav>
+    </header>
+
+    <section class="grid">
+      <aside class="panel">
+        <h2>人员名单</h2>
+        <form id="employee-form" class="form-row">
+          <input id="employee-name" autocomplete="off" placeholder="输入员工姓名" />
+          <button class="btn primary icon" type="submit"><i class="fas fa-plus"></i>新增</button>
+        </form>
+        <div class="chips" id="staff-grid"></div>
+
+        <h2 class="section-gap">休息人员</h2>
+        <div class="chips" id="rest-grid"></div>
+
+        <h2 class="section-gap">未分配人员</h2>
+        <div class="chips" id="unassigned-grid"></div>
+      </aside>
+
+      <section class="panel">
+        <div class="toolbar">
+          <button class="btn primary icon" type="button" onclick="randomAssign()"><i class="fas fa-shuffle"></i>随机分配</button>
+          <button class="btn icon" type="button" onclick="clearAll()"><i class="fas fa-eraser"></i>清空分配</button>
+          <button class="btn warning icon" type="button" onclick="exportExcel()"><i class="fas fa-file-excel"></i>导出 Excel</button>
+        </div>
+
+        <form id="area-form" class="form-row two">
+          <input id="area-name" autocomplete="off" placeholder="新增区域名称" />
+          <input id="area-task-name" autocomplete="off" placeholder="第一个清洁内容" />
+          <button class="btn primary icon" type="submit"><i class="fas fa-plus"></i>新增区域</button>
+        </form>
+
+        <div class="status" id="status"></div>
+        <div id="task-board"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const requestedCompany = new URLSearchParams(location.search).get('company') || 'wuhan';
+
+    let companies = [];
+    let currentCompany = null;
+    let restSet = new Set();
+    let assignments = {};
+
+    async function apiRequest(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || data.error || '请求失败');
+      return data;
+    }
+
+    async function loadCompanies() {
+      companies = await apiRequest('/api/companies');
+      renderCompanySwitcher();
+      const keys = new Set(companies.map((company) => company.key));
+      await loadCompany(keys.has(requestedCompany) ? requestedCompany : (companies[0] && companies[0].key));
+    }
+
+    async function loadCompany(key) {
+      currentCompany = await apiRequest(`/api/companies/${encodeURIComponent(key)}`);
+      loadLocalState();
+      renderAll();
+    }
+
+    function renderCompanySwitcher() {
+      const switcher = document.getElementById('company-switcher');
+      switcher.innerHTML = companies.map((company) => (
+        `<button type="button" data-key="${escapeHtml(company.key)}">${escapeHtml(company.name)}</button>`
+      )).join('');
+      switcher.querySelectorAll('button').forEach((button) => {
+        button.addEventListener('click', () => loadCompany(button.dataset.key).catch(showError));
+      });
+    }
+
+    function renderAll() {
+      applyFixedAssignments();
+      document.getElementById('page-title').textContent = `${currentCompany.name}大扫除安排表`;
+      document.getElementById('page-subtitle').textContent = `${currentCompany.subtitle} · ${currentCompany.employees.length} 名员工 · ${getTaskKeys().length} 个清洁任务`;
+      document.querySelectorAll('#company-switcher button').forEach((button) => {
+        button.classList.toggle('active', button.dataset.key === currentCompany.key);
+      });
+      renderEmployees();
+      renderRest();
+      renderTasks();
+      renderUnassigned();
+      setStatus('');
+    }
+
+    function taskKey(areaName, taskName) {
+      return `${areaName}::${taskName}`;
+    }
+
+    function getTaskKeys() {
+      return currentCompany.areas.flatMap((area) => area.tasks.map((task) => taskKey(area.name, task.name)));
+    }
+
+    function findFixedAssignment(areaName, taskName) {
+      return currentCompany.fixedAssignments.find((item) => item.areaName === areaName && item.taskName === taskName);
+    }
+
+    function isFixedEmployee(employeeName) {
+      return currentCompany.fixedAssignments.some((item) => item.employeeName === employeeName);
+    }
+
+    function applyFixedAssignments() {
+      currentCompany.fixedAssignments.forEach((item) => {
+        assignments[taskKey(item.areaName, item.taskName)] = item.employeeName;
+      });
+    }
+
+    function renderEmployees() {
+      const grid = document.getElementById('staff-grid');
+      grid.innerHTML = '';
+      currentCompany.employees.forEach((employeeName) => {
+        const chip = document.createElement('span');
+        chip.className = `chip clickable${restSet.has(employeeName) ? ' rest' : ''}${isFixedEmployee(employeeName) ? ' fixed' : ''}`;
+        chip.title = '点击切换休息状态';
+        chip.append(document.createTextNode(employeeName));
+        chip.addEventListener('click', () => toggleRest(employeeName));
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.textContent = '×';
+        deleteButton.title = '删除人员';
+        deleteButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          deleteEmployee(employeeName).catch(showError);
+        });
+        chip.appendChild(deleteButton);
+        grid.appendChild(chip);
+      });
+    }
+
+    function renderRest() {
+      const grid = document.getElementById('rest-grid');
+      grid.innerHTML = [...restSet].map((name) => `<span class="chip rest">${escapeHtml(name)}</span>`).join('') || '<span class="status">暂无休息人员</span>';
+    }
+
+    function renderTasks() {
+      const board = document.getElementById('task-board');
+      board.innerHTML = '';
+      currentCompany.areas.forEach((area) => {
+        const section = document.createElement('section');
+        section.className = 'area';
+        section.innerHTML = `
+          <div class="area-head">
+            <div class="area-name">${escapeHtml(area.name)}</div>
+            <div class="toolbar">
+              <button class="btn icon" type="button" data-action="add-task"><i class="fas fa-plus"></i>任务</button>
+              <button class="btn danger icon" type="button" data-action="delete-area"><i class="fas fa-trash"></i>区域</button>
+            </div>
+          </div>
+          <div class="task-grid"></div>
+        `;
+        section.querySelector('[data-action="add-task"]').addEventListener('click', () => addTask(area.name).catch(showError));
+        section.querySelector('[data-action="delete-area"]').addEventListener('click', () => deleteArea(area.name).catch(showError));
+
+        const taskGrid = section.querySelector('.task-grid');
+        area.tasks.forEach((task) => taskGrid.appendChild(createTaskCard(area.name, task.name)));
+        board.appendChild(section);
+      });
+      saveLocalState();
+    }
+
+    function createTaskCard(areaName, taskName) {
+      const key = taskKey(areaName, taskName);
+      const fixed = findFixedAssignment(areaName, taskName);
+      const card = document.createElement('article');
+      card.className = 'task-card';
+      card.innerHTML = `
+        <div>
+          <div class="task-title">${escapeHtml(taskName)}</div>
+          <div class="assigned">${assignments[key] ? `✓ ${escapeHtml(assignments[key])}` : '未分配'}</div>
+        </div>
+        <div class="task-actions">
+          <select aria-label="选择负责人">
+            <option value="">选择负责人</option>
+            ${availableEmployeeOptions(assignments[key])}
+          </select>
+          <button class="btn primary" type="button" data-action="assign">分配</button>
+          <button class="btn" type="button" data-action="clear">取消</button>
+          <button class="btn danger" type="button" data-action="delete-task">删除</button>
+        </div>
+      `;
+      const select = card.querySelector('select');
+      card.querySelector('[data-action="assign"]').addEventListener('click', () => assignTask(key, select.value));
+      card.querySelector('[data-action="clear"]').addEventListener('click', () => clearAssignment(key));
+      card.querySelector('[data-action="delete-task"]').addEventListener('click', () => deleteTask(areaName, taskName).catch(showError));
+      if (fixed) {
+        select.disabled = true;
+        card.querySelector('[data-action="assign"]').disabled = true;
+        card.querySelector('[data-action="clear"]').disabled = true;
+      }
+      return card;
+    }
+
+    function availableEmployeeOptions(currentName) {
+      const assigned = new Set(Object.values(assignments));
+      return currentCompany.employees
+        .filter((name) => name === currentName || (!restSet.has(name) && !assigned.has(name) && !isFixedEmployee(name)))
+        .map((name) => `<option value="${escapeHtml(name)}"${name === currentName ? ' selected' : ''}>${escapeHtml(name)}</option>`)
+        .join('');
+    }
+
+    function renderUnassigned() {
+      const assigned = new Set(Object.values(assignments));
+      const names = currentCompany.employees.filter((name) => !restSet.has(name) && !assigned.has(name));
+      document.getElementById('unassigned-grid').innerHTML = names.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('') || '<span class="status">暂无未分配人员</span>';
+    }
+
+    function toggleRest(employeeName) {
+      if (isFixedEmployee(employeeName)) {
+        setStatus('固定负责人不可设为休息');
+        return;
+      }
+      if (restSet.has(employeeName)) restSet.delete(employeeName);
+      else restSet.add(employeeName);
+      Object.keys(assignments).forEach((key) => {
+        if (assignments[key] === employeeName) delete assignments[key];
+      });
+      saveLocalState();
+      renderAll();
+    }
+
+    function assignTask(key, employeeName) {
+      if (!employeeName) {
+        setStatus('请先选择负责人');
+        return;
+      }
+      const fixed = currentCompany.fixedAssignments.find((item) => taskKey(item.areaName, item.taskName) === key);
+      if (fixed) {
+        setStatus('固定任务不可更改');
+        return;
+      }
+      Object.keys(assignments).forEach((task) => {
+        if (assignments[task] === employeeName && task !== key) delete assignments[task];
+      });
+      assignments[key] = employeeName;
+      saveLocalState();
+      renderAll();
+    }
+
+    function clearAssignment(key) {
+      const fixed = currentCompany.fixedAssignments.find((item) => taskKey(item.areaName, item.taskName) === key);
+      if (fixed) {
+        setStatus('固定任务不可取消');
+        return;
+      }
+      delete assignments[key];
+      saveLocalState();
+      renderAll();
+    }
+
+    function randomAssign() {
+      assignments = {};
+      applyFixedAssignments();
+      const used = new Set(Object.values(assignments));
+      const employees = currentCompany.employees
+        .filter((name) => !restSet.has(name) && !used.has(name) && !isFixedEmployee(name))
+        .sort(() => Math.random() - 0.5);
+      const freeTasks = getTaskKeys().filter((key) => !assignments[key]);
+      freeTasks.forEach((key, index) => {
+        if (employees[index]) assignments[key] = employees[index];
+      });
+      saveLocalState();
+      renderAll();
+    }
+
+    function clearAll() {
+      assignments = {};
+      applyFixedAssignments();
+      saveLocalState();
+      renderAll();
+    }
+
+    async function addEmployee(name) {
+      const value = name.trim();
+      if (!value) return;
+      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/employees`, {
+        method: 'POST',
+        body: JSON.stringify({ name: value })
+      });
+      saveLocalState();
+      renderAll();
+    }
+
+    async function deleteEmployee(employeeName) {
+      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/employees/${encodeURIComponent(employeeName)}`, {
+        method: 'DELETE'
+      });
+      restSet.delete(employeeName);
+      Object.keys(assignments).forEach((key) => {
+        if (assignments[key] === employeeName) delete assignments[key];
+      });
+      saveLocalState();
+      renderAll();
+    }
+
+    async function addArea(name, firstTaskName) {
+      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas`, {
+        method: 'POST',
+        body: JSON.stringify({ name: name.trim(), firstTaskName: firstTaskName.trim() })
+      });
+      renderAll();
+    }
+
+    async function deleteArea(areaName) {
+      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(areaName)}`, {
+        method: 'DELETE'
+      });
+      Object.keys(assignments).forEach((key) => {
+        if (key.startsWith(`${areaName}::`)) delete assignments[key];
+      });
+      saveLocalState();
+      renderAll();
+    }
+
+    async function addTask(areaName) {
+      const name = prompt('请输入清洁内容');
+      if (!name || !name.trim()) return;
+      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(areaName)}/tasks`, {
+        method: 'POST',
+        body: JSON.stringify({ name: name.trim() })
+      });
+      renderAll();
+    }
+
+    async function deleteTask(areaName, taskName) {
+      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(areaName)}/tasks/${encodeURIComponent(taskName)}`, {
+        method: 'DELETE'
+      });
+      delete assignments[taskKey(areaName, taskName)];
+      saveLocalState();
+      renderAll();
+    }
+
+    function loadLocalState() {
+      assignments = {};
+      restSet = new Set();
+      const raw = localStorage.getItem(currentCompany.storageKey);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          assignments = parsed.assignments || {};
+          restSet = new Set(parsed.restEmployees || parsed.rest || []);
+        } catch {
+          assignments = {};
+          restSet = new Set();
+        }
+      }
+      applyFixedAssignments();
+    }
+
+    function saveLocalState() {
+      if (!currentCompany) return;
+      localStorage.setItem(currentCompany.storageKey, JSON.stringify({
+        assignments,
+        restEmployees: [...restSet]
+      }));
+    }
+
+    function exportExcel() {
+      const rows = [['区域', '清洁内容', '负责人']];
+      currentCompany.areas.forEach((area) => {
+        area.tasks.forEach((task) => {
+          rows.push([area.name, task.name, assignments[taskKey(area.name, task.name)] || '']);
+        });
+      });
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '大扫除安排');
+      XLSX.writeFile(wb, `呈尚策划${currentCompany.name}大扫除安排表.xlsx`);
+    }
+
+    function setStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function showError(error) {
+      setStatus(error.message || '操作失败');
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    document.getElementById('employee-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const input = document.getElementById('employee-name');
+      try {
+        await addEmployee(input.value);
+        input.value = '';
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    document.getElementById('area-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const areaInput = document.getElementById('area-name');
+      const taskInput = document.getElementById('area-task-name');
+      try {
+        await addArea(areaInput.value, taskInput.value);
+        areaInput.value = '';
+        taskInput.value = '';
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    loadCompanies().catch(showError);
+  </script>
+</body>
+</html>
