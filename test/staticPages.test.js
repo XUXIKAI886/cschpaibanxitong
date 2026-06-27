@@ -21,6 +21,25 @@ test('cleaning.html is API backed and selected by company query', () => {
   assert.match(html, /async function loadCompany/);
   assert.doesNotMatch(html, /const ALL_EMPLOYEES = \[/);
   assert.doesNotMatch(html, /const DEFAULT_AREAS = \{/);
+  assert.doesNotMatch(html, /saved && isValidAreas\(saved\.areas\)/);
+});
+
+test('cleaning.html keeps the original cleaning page UI structure', () => {
+  const html = readRoot('cleaning.html');
+  assert.match(html, /class="hero"/);
+  assert.match(html, /class="stats-bar"/);
+  assert.match(html, /class="panels-row"/);
+  assert.match(html, /class="table-container"/);
+  assert.match(html, /class="cleaning-table"/);
+  assert.match(html, /id="ctx-menu"/);
+  assert.match(html, /id="task-ctx-menu"/);
+  assert.match(html, /onclick="addEmployee\(\)"/);
+  assert.match(html, /id="ctx-delete"/);
+  assert.match(html, /async function addEmployee/);
+  assert.match(html, /async function deleteEmployee/);
+  assert.doesNotMatch(html, /class="task-card"/);
+  assert.doesNotMatch(html, /id="company-tabs"/);
+  assert.doesNotMatch(html, /id="employee-form"/);
 });
 
 test('operations schedule page loads config and saves records through API', () => {
