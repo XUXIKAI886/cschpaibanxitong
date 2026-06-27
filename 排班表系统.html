@@ -719,8 +719,35 @@
 
 <script>
   // ───────── data ─────────
-  const employees = ['杨有淇', '陈吉舒', '王涛', '王清月', '袁丽妮', '陈冉'];
-  const dayNames = ['星期一','星期二','星期三','星期四','星期五','星期六','星期天'];
+  let employees = [];
+  let dayNames = [];
+  let scheduleRules = { sundayWorkCount: 2, twoDayComplement: true };
+
+  async function apiRequest(path, options = {}) {
+    const response = await fetch(path, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || data.error || '请求失败');
+    return data;
+  }
+
+  async function loadScheduleSystem() {
+    const system = await apiRequest('/api/schedule-systems/operations');
+    employees = system.employees || [];
+    dayNames = system.dayNames || ['星期一','星期二','星期三','星期四','星期五','星期六','星期天'];
+    scheduleRules = system.rules || scheduleRules;
+    applyDefaultSelectedDays(system.defaultSelectedDayIndexes || [5, 6]);
+  }
+
+  function applyDefaultSelectedDays(indexes) {
+    const selected = new Set(indexes);
+    document.querySelectorAll('.day-pill input').forEach((input) => {
+      input.checked = selected.has(Number(input.value));
+      input.closest('.day-pill').classList.toggle('selected', input.checked);
+    });
+  }
 
   function makeAvatar(name) {
     const img = document.createElement('img');
@@ -733,6 +760,7 @@
   // ───────── init table ─────────
   function initScheduleTable() {
     const tbody = document.getElementById('scheduleBody');
+    tbody.innerHTML = '';
     employees.forEach((emp, i) => {
       const tr = document.createElement('tr');
 
@@ -947,7 +975,7 @@
   function generateRegular(days, rows) {
     days.forEach(d => {
       let workCount;
-      if (d.name === '星期天') workCount = 2;
+      if (d.name === '星期天') workCount = scheduleRules.sundayWorkCount || 2;
       else workCount = Math.floor(employees.length / 2) + (Math.random() < .5 ? 0 : 1);
       const shuffled = shuffleArray(employees);
       const workers = shuffled.slice(0, workCount);
@@ -988,20 +1016,39 @@
     toast('已导出 Excel ✓');
   }
 
-  function saveSchedule() {
-    const data = [];
+  async function saveSchedule() {
+    const rows = [];
     document.querySelectorAll('#scheduleBody tr').forEach(row => {
       const name = row.querySelector('.emp-name').textContent;
-      const arr = Array.from(row.children).slice(1).map(td => {
+      const schedule = Array.from(row.children).slice(1).map(td => {
         const sc = td.querySelector('.schedule-cell');
         if (sc.classList.contains('work-assigned')) return 'work';
         if (sc.classList.contains('rest-assigned')) return 'rest';
         return '';
       });
-      data.push({name, schedule: arr});
+      rows.push({name, schedule});
     });
-    localStorage.setItem('schedule_v2', JSON.stringify(data));
-    toast('已保存到本地 ✓');
+    await apiRequest('/api/schedule-systems/operations/records', {
+      method: 'POST',
+      body: JSON.stringify({ rows })
+    });
+    localStorage.setItem('schedule_v2', JSON.stringify(rows));
+    toast('已保存到云数据库 ✓');
+  }
+
+  async function loadLatestSchedule() {
+    const record = await apiRequest('/api/schedule-systems/operations/records/latest');
+    const rows = record && record.rows ? record.rows : [];
+    const byName = new Map(rows.map((row) => [row.name, row.schedule]));
+    document.querySelectorAll('#scheduleBody tr').forEach(row => {
+      const name = row.querySelector('.emp-name').textContent;
+      const schedule = byName.get(name) || [];
+      Array.from(row.children).slice(1).forEach((td, index) => {
+        const status = schedule[index];
+        const cell = td.querySelector('.schedule-cell');
+        if (status === 'work' || status === 'rest') setScheduleStatus(cell, status);
+      });
+    });
   }
 
   function copyTableScreenshot() {
@@ -1035,12 +1082,18 @@
   }
 
   // ───────── boot ─────────
-  document.addEventListener('DOMContentLoaded', () => {
-    initScheduleTable();
-    initDragAndDrop();
-    initDaySelector();
-    initContextMenu();
-    updateGenBtn();
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      await loadScheduleSystem();
+      initScheduleTable();
+      initDragAndDrop();
+      initDaySelector();
+      initContextMenu();
+      updateGenBtn();
+      await loadLatestSchedule();
+    } catch (error) {
+      toast(error.message || '排班数据加载失败');
+    }
   });
 </script>
 </body>

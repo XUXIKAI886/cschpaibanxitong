@@ -22,3 +22,12 @@ test('cleaning.html is API backed and selected by company query', () => {
   assert.doesNotMatch(html, /const ALL_EMPLOYEES = \[/);
   assert.doesNotMatch(html, /const DEFAULT_AREAS = \{/);
 });
+
+test('operations schedule page loads config and saves records through API', () => {
+  const html = readRoot('排班表系统.html');
+  assert.match(html, /async function loadScheduleSystem/);
+  assert.match(html, /async function loadLatestSchedule/);
+  assert.match(html, /\/api\/schedule-systems\/operations/);
+  assert.match(html, /\/records\/latest/);
+  assert.doesNotMatch(html, /const employees = \[/);
+});
