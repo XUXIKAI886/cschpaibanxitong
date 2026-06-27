@@ -2,3 +2,7 @@
 # YoYo AI version control directory
 .yoyo/
 .worktrees/
+node_modules/
+.env
+.env.local
+.vercel/
