@@ -1,48 +1,85 @@
-# Dasaochupaiban Cloud API Design
+# Vercel Cloud Scheduling System Design
 
 ## Goal
 
-Build a Node.js/Express backend connected to the MongoDB cloud database `dasaochupaiban`, migrate the current Wuhan and Yichang cleaning roster configuration into MongoDB, and add one unified frontend page that reads and edits employees, cleaning areas, and cleaning tasks through backend APIs.
+Move the current GitHub-static scheduling project to Vercel, add Vercel-hosted backend APIs connected to the MongoDB cloud database `dasaochupaiban`, seed all existing local configuration into MongoDB, and update the three homepage entries so they load and save data through APIs.
+
+The three homepage entries remain:
+
+- `排班表系统.html`
+- 宜昌大扫除入口, routed to `cleaning.html?company=yichang`
+- 武汉大扫除入口, routed to `cleaning.html?company=wuhan`
 
 ## Current Context
 
-The project is currently a static HTML application. The Wuhan and Yichang cleaning systems are separate self-contained HTML files:
+The project is currently a static HTML application deployed from GitHub. `index.html` is the homepage and links to three independent pages:
 
-- `武汉公司大扫除安排表.html`
+- `排班表系统.html`
 - `销售部大扫除安排表.html`
+- `武汉公司大扫除安排表.html`
 
-Each page hardcodes its own employees, cleaning areas, cleaning tasks, and fixed assignments in JavaScript. Browser-only state such as current assignments and rest employees is saved in `localStorage`.
+The current static-only shape cannot support cloud database writes on GitHub Pages. After backend APIs are introduced, the project should be deployed to Vercel instead of GitHub Pages.
 
-The local `数据库` file contains a MongoDB connection string. The real connection string must stay out of Git and be moved into a local `.env` file when implementation begins.
+Current data locations:
+
+- `排班表系统.html` hardcodes six employees:
+  - `杨有淇`
+  - `陈吉舒`
+  - `王涛`
+  - `王清月`
+  - `袁丽妮`
+  - `陈冉`
+- `排班表系统.html` hardcodes `dayNames` as `星期一` through `星期天`.
+- `排班表系统.html` saves generated schedules to browser `localStorage` key `schedule_v2`.
+- `武汉公司大扫除安排表.html` hardcodes Wuhan employees, cleaning areas, tasks, and fixed assignments.
+- `销售部大扫除安排表.html` hardcodes Yichang employees, cleaning areas, tasks, and fixed assignments.
+
+The local `数据库` file contains a MongoDB connection string. The real connection string must stay out of Git and be configured through local `.env` and Vercel environment variables.
 
 ## Chosen Approach
 
-Use a standalone Node.js/Express backend with the official MongoDB driver or Mongoose, and add one unified frontend page, `cleaning.html`.
+Use Vercel as the single deployment target:
 
-The backend will:
+- Static HTML/CSS/JS pages are served by Vercel.
+- Backend APIs live under the repository root `api/` directory as Vercel Functions.
+- Shared database, repository, seed, and routing code lives under `lib/`.
+- MongoDB connection uses `process.env.MONGODB_URI`.
+- The database name is `dasaochupaiban`.
+- A root `package.json` defines dependencies, tests, local seed, and Vercel dev scripts.
 
-- Read `MONGODB_URI` from `.env`.
-- Connect to the MongoDB database named `dasaochupaiban`.
-- Store one document per company in a `companies` collection.
-- Expose REST APIs for reading companies and editing employees, areas, and tasks.
-- Provide a seed command and seed API to initialize MongoDB from the current static HTML data.
+This replaces the earlier standalone Express-server deployment idea. Vercel Functions are request-driven and scale without a persistent Node server, which fits the new deployment target.
 
-The frontend will:
+## Vercel Deployment Model
 
-- Load company data from the backend instead of hardcoded arrays.
-- Let the user switch between Wuhan and Yichang.
-- Let the user add and delete employees, areas, and tasks directly from the page.
-- Keep existing browser-side assignment behavior: rest employees, current task assignments, random assignment, and export continue to use local browser state.
+Project type:
 
-The old Wuhan and Yichang HTML files stay in the repository as fallback pages during the migration.
+- Framework preset: `Other`.
+- Build command: none.
+- Static output: repository root, or `public` if a later implementation chooses to move static files.
+- API functions: files in root `api/`.
+- Environment variable: `MONGODB_URI`.
 
-## Data Model
+Recommended files:
+
+- `package.json`
+- `vercel.json`
+- `api/index.js`
+- `lib/apiHandler.js`
+- `lib/db.js`
+- `lib/seedData.js`
+- `lib/repositories/companyRepository.js`
+- `lib/repositories/scheduleRepository.js`
+- `scripts/seed.js`
+
+`api/index.js` will be a single Vercel Function used as the API entrypoint. `vercel.json` will rewrite `/api/*` requests to that function, and `lib/apiHandler.js` will dispatch by method and path. This avoids creating many small function files and keeps shared code outside `api/`.
+
+## MongoDB Data Model
 
 MongoDB database: `dasaochupaiban`
 
-Collection: `companies`
+### Collection: `companies`
 
-One company document:
+One document per cleaning company:
 
 ```json
 {
@@ -76,19 +113,85 @@ Company keys:
 - `wuhan`
 - `yichang`
 
-Seed data source:
+### Collection: `scheduleSystems`
 
-- Wuhan employees: current `ALL_EMPLOYEES` in `武汉公司大扫除安排表.html`, including `张新业`.
-- Yichang employees: current `ALL_EMPLOYEES` in `销售部大扫除安排表.html`.
-- Cleaning areas and tasks: current `DEFAULT_AREAS` in each HTML file.
-- Fixed assignments: current `FIXED_MAP` in each HTML file.
+One document for the existing operations schedule page:
+
+```json
+{
+  "key": "operations",
+  "name": "排班表系统",
+  "storageKey": "schedule_v2",
+  "employees": ["杨有淇", "陈吉舒", "王涛", "王清月", "袁丽妮", "陈冉"],
+  "dayNames": ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期天"],
+  "defaultSelectedDayIndexes": [5, 6],
+  "rules": {
+    "sundayWorkCount": 2,
+    "twoDayComplement": true
+  },
+  "updatedAt": "2026-06-27T00:00:00.000Z"
+}
+```
+
+The operations schedule employee list and day names move from hardcoded JavaScript into this collection.
+
+### Collection: `scheduleRecords`
+
+Stores saved schedule tables from `排班表系统.html`:
+
+```json
+{
+  "systemKey": "operations",
+  "version": 1,
+  "rows": [
+    {
+      "name": "杨有淇",
+      "schedule": ["", "", "", "", "", "work", "rest"]
+    }
+  ],
+  "createdAt": "2026-06-27T00:00:00.000Z",
+  "updatedAt": "2026-06-27T00:00:00.000Z"
+}
+```
+
+For this version, the page only needs the latest saved record. Historical records can remain in the collection for future use, but the API will expose a latest-save workflow.
+
+## Seed Data Source
+
+The seed command writes the current repository data into MongoDB:
+
+- Wuhan cleaning data from current `武汉公司大扫除安排表.html`
+  - Employees include `张新业`.
+  - Areas and tasks come from current `DEFAULT_AREAS`.
+  - Fixed assignments come from current `FIXED_MAP`.
+- Yichang cleaning data from current `销售部大扫除安排表.html`
+  - Employees come from current `ALL_EMPLOYEES`.
+  - Areas and tasks come from current `DEFAULT_AREAS`.
+  - Fixed assignments come from current `FIXED_MAP`.
+- Operations schedule data from current `排班表系统.html`
+  - Employees: `杨有淇`, `陈吉舒`, `王涛`, `王清月`, `袁丽妮`, `陈冉`.
+  - Days: `星期一` through `星期天`.
+  - Default selected days: Saturday and Sunday, indexes `[5, 6]`.
+  - Rules: Sunday has exactly two workers; two-day schedules use complement rules.
 
 ## API Design
 
-Base URL during local development: `http://localhost:3000`
+Base path on Vercel and locally:
 
 ```text
-GET    /api/health
+/api
+```
+
+Health and seed:
+
+```text
+GET  /api/health
+POST /api/admin/seed
+```
+
+Cleaning company APIs:
+
+```text
 GET    /api/companies
 GET    /api/companies/:key
 
@@ -100,11 +203,20 @@ DELETE /api/companies/:key/areas/:areaName
 
 POST   /api/companies/:key/areas/:areaName/tasks
 DELETE /api/companies/:key/areas/:areaName/tasks/:taskName
-
-POST   /api/admin/seed
 ```
 
-Expected request bodies:
+Operations schedule APIs:
+
+```text
+GET    /api/schedule-systems/:key
+POST   /api/schedule-systems/:key/employees
+DELETE /api/schedule-systems/:key/employees/:employeeName
+
+GET    /api/schedule-systems/:key/records/latest
+POST   /api/schedule-systems/:key/records
+```
+
+Request body examples:
 
 ```json
 { "name": "张三" }
@@ -116,129 +228,140 @@ for adding an employee.
 { "name": "办公区", "firstTaskName": "地面吸尘" }
 ```
 
-for adding an area.
+for adding a cleaning area.
 
 ```json
 { "name": "擦桌椅" }
 ```
 
-for adding a task.
+for adding a cleaning task.
+
+```json
+{
+  "rows": [
+    {
+      "name": "杨有淇",
+      "schedule": ["", "", "", "", "", "work", "rest"]
+    }
+  ]
+}
+```
+
+for saving an operations schedule record.
 
 Behavior rules:
 
-- Unknown company keys return `404`.
+- Unknown keys return `404`.
 - Duplicate employee names, area names, or task names return `409`.
 - Missing or blank names return `400`.
-- Deleting an employee who is a fixed assignment owner returns `409`.
-- Deleting an area also deletes all tasks in that area.
-- No authentication is required. Anyone who can access the backend can call edit APIs.
-- API responses should return the updated company document after successful mutations.
+- Deleting a cleaning employee who owns a fixed assignment returns `409`.
+- Deleting a cleaning area also deletes all tasks in that area.
+- `POST /api/schedule-systems/:key/records` validates each row name against the schedule system employee list.
+- No authentication is required. Anyone who can access the deployed Vercel site can call edit APIs.
+- Mutation responses return the updated document or saved record.
 
 ## Frontend Design
 
-Create a new unified page:
+### Homepage
 
-- `cleaning.html`
+`index.html` keeps three entry cards:
 
-The page will have:
+- Operations schedule card links to `排班表系统.html`.
+- Yichang cleaning card links to `cleaning.html?company=yichang`.
+- Wuhan cleaning card links to `cleaning.html?company=wuhan`.
 
-- A company switcher for `武汉公司` and `宜昌公司`.
-- A people management section showing employees from `GET /api/companies/:key`.
-- Add/delete controls for employees.
-- A cleaning task table rendered from `areas[].tasks`.
-- Add/delete controls for areas.
-- Add/delete controls for tasks inside each area.
-- Existing assignment interactions adapted from the old pages:
-  - Mark employee as resting.
-  - Assign employee to task.
-  - Clear assignment.
-  - Random assignment.
-  - Export to Excel.
-  - Show unassigned employees.
+The old standalone cleaning pages remain in the repository as fallback files during migration, but the homepage should point users to the API-backed unified cleaning page.
 
-State split:
+### Unified Cleaning Page
 
-- Cloud database stores base configuration: employees, areas, tasks, fixed assignments.
-- Browser `localStorage` stores session/workday state: rest employees and current task assignments.
+Create `cleaning.html`:
 
-Local storage keys:
+- Reads company summaries from `GET /api/companies`.
+- Reads the selected company from `GET /api/companies/:key`.
+- Uses `company` query parameter to choose `wuhan` or `yichang`.
+- Renders employees, areas, tasks, and fixed assignments from MongoDB.
+- Allows adding and deleting employees, areas, and tasks through API calls.
+- Keeps daily rest/assignment state in browser `localStorage` using each company's `storageKey`.
+- Keeps random assignment and Excel export browser-side.
 
-- Use each company's `storageKey` from the API.
-- Keep current keys where possible: `whClean2` and `ycClean2`.
+### Operations Schedule Page
 
-## Backend File Layout
+Update `排班表系统.html`:
 
-Planned files:
-
-- `server/package.json`
-- `server/.env.example`
-- `server/src/app.js`
-- `server/src/server.js`
-- `server/src/db.js`
-- `server/src/seedData.js`
-- `server/src/repositories/companyRepository.js`
-- `server/src/routes/companyRoutes.js`
-- `server/src/routes/adminRoutes.js`
-- `server/scripts/seed.js`
-- `server/test/companyApi.test.js`
-
-The repository root can keep static HTML files. Express can serve the project root as static files during local development so `cleaning.html` can call `/api/...` from the same origin.
-
-## Migration Plan
-
-1. Add backend project files under `server/`.
-2. Create `.env.example` with:
-
-   ```text
-   MONGODB_URI=mongodb://user:password@example-host:27017/?directConnection=true
-   PORT=3000
-   ```
-
-3. Create a local `.env` from the existing `数据库` file. Do not commit `.env`.
-4. Add `seedData.js` containing the current Wuhan and Yichang company data.
-5. Add `npm run seed` to upsert the two company documents into MongoDB.
-6. Add REST APIs and tests.
-7. Add `cleaning.html` and wire it to the APIs.
-8. Update `index.html` to link to the unified cleaning page while keeping old pages available.
+- Remove hard dependency on hardcoded `employees` for rendering.
+- Load employees, day names, default selected days, and rules from `GET /api/schedule-systems/operations`.
+- Render the table after API data loads.
+- Keep random schedule generation in the browser, using API-provided rules.
+- Change `saveSchedule()` to call `POST /api/schedule-systems/operations/records`.
+- On page load, call `GET /api/schedule-systems/operations/records/latest` and restore the latest saved schedule if present.
+- Keep Excel export and screenshot copy browser-side.
+- Optionally keep a local fallback only for API-load failure messaging, not as the primary data source.
 
 ## Testing Strategy
 
-Backend automated tests should cover:
+Automated tests should cover:
 
-- `GET /api/health` returns healthy status.
-- `GET /api/companies` returns company summaries.
-- `GET /api/companies/wuhan` returns Wuhan employees and areas.
-- Adding a new employee succeeds.
-- Adding a duplicate employee returns `409`.
-- Deleting a fixed assignment employee returns `409`.
-- Adding an area with first task succeeds.
-- Adding a duplicate area returns `409`.
-- Adding and deleting a task succeeds.
+- `GET /api/health`.
+- Seed data includes both cleaning companies and the operations schedule system.
+- Cleaning company read, employee add/delete, duplicate conflicts, fixed employee delete rejection, area add/delete, task add/delete.
+- Operations schedule config read.
+- Operations schedule employee add/delete and duplicate conflict.
+- Operations schedule record save and latest read.
+- Vercel API handler routes by method and path.
+- Static HTML checks:
+  - `index.html` links to `cleaning.html?company=yichang` and `cleaning.html?company=wuhan`.
+  - `排班表系统.html` contains API load/save hooks and no longer relies on a hardcoded employee list as the primary source.
+  - `cleaning.html` contains API load/edit hooks.
 
 Manual verification should cover:
 
-- Start the backend with the local MongoDB connection.
-- Run the seed command and confirm both company documents exist.
-- Open `http://localhost:3000/cleaning.html`.
-- Switch between Wuhan and Yichang.
-- Add and delete a non-fixed employee.
-- Add and delete an area.
-- Add and delete a task.
-- Refresh the page and confirm edited base data is loaded from MongoDB.
-- Use rest, assignment, random assignment, and export workflows.
+- Run `vercel dev`.
+- Run the seed command locally against MongoDB.
+- Open `http://localhost:3000/index.html`.
+- Enter all three homepage cards.
+- In `排班表系统.html`, confirm employees load from API, generate a schedule, save it, refresh, and confirm the latest saved record restores.
+- In `cleaning.html?company=wuhan`, confirm Wuhan data includes `张新业`.
+- In `cleaning.html?company=yichang`, confirm Yichang fixed assignments include `吴思湘` and `徐晓辉`.
+- Add and delete a temporary employee in both cleaning and schedule systems.
+- Add and delete a temporary cleaning area and task.
+- Confirm Excel export still works in both page types.
+
+## Deployment Plan
+
+1. Add root Node/Vercel project files.
+2. Add Vercel API function and shared `lib/` modules.
+3. Add seed data and seed script.
+4. Seed MongoDB database `dasaochupaiban`.
+5. Add `cleaning.html`.
+6. Update `排班表系统.html` to use schedule APIs.
+7. Update `index.html` to keep three entries but point cleaning cards to `cleaning.html?company=...`.
+8. Configure `MONGODB_URI` in Vercel Project Settings.
+9. Deploy to Vercel.
+10. Stop relying on GitHub Pages for the live app.
 
 ## Security and Operational Constraints
 
 - Do not commit the real MongoDB connection string.
-- Do not commit `.env`.
+- Do not commit `.env`, `.env.local`, or Vercel local environment files.
+- Configure `MONGODB_URI` in Vercel environment variables.
 - No authentication is required for this version by explicit product decision.
-- Because there is no authentication, deploy only in a trusted environment or behind private access controls.
-- Keep old HTML files until the unified page is verified.
-- Avoid changing unrelated scheduling pages.
+- Because there is no authentication, deploy only where public edits are acceptable or behind Vercel/project-level access controls.
+- Keep old cleaning HTML files until the unified page is verified.
+- Do not break the homepage's three-entry structure.
+
+## References
+
+- Vercel Functions: https://vercel.com/docs/functions
+- Vercel Node.js Runtime: https://vercel.com/docs/functions/runtimes/node-js
+- Vercel Environment Variables: https://vercel.com/docs/environment-variables
+- Vercel Build Configuration: https://vercel.com/docs/builds/configure-a-build
+- Vercel Project Configuration: https://vercel.com/docs/project-configuration/vercel-json
 
 ## Open Decisions Resolved
 
-- Backend shape: standalone Node.js/Express.
-- Frontend shape: one unified cleaning page for Wuhan and Yichang.
+- Deployment target: Vercel, not GitHub Pages.
+- Backend shape: Vercel Functions under `/api`, not a standalone persistent Express server.
+- Frontend shape: keep homepage with three project entries.
+- Cleaning page shape: one unified API-backed `cleaning.html`, selected by query parameter.
+- Operations schedule page: existing `排班表系统.html` stays as the entry, but loads config and saved records from the backend API.
 - Edit protection: no password or login for this version.
-- Cloud state scope: base configuration only; daily assignment state stays in browser local storage.

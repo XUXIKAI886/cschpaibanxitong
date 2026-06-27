@@ -1,291 +1,315 @@
-# Dasaochupaiban Cloud API Implementation Plan
+# Vercel Cloud Scheduling System Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build an Express backend connected to MongoDB database `dasaochupaiban`, seed Wuhan/Yichang cleaning configuration, and add one unified frontend page that reads and edits people, areas, and tasks through APIs.
+**Goal:** Deploy the three-entry scheduling homepage to Vercel, add Vercel API Functions connected to MongoDB database `dasaochupaiban`, migrate cleaning and operations schedule data into MongoDB, and update the frontend pages to load/save through APIs.
 
-**Architecture:** A standalone Express app under `server/` serves REST APIs and static files from the repository root. MongoDB stores base cleaning configuration in a `companies` collection, one document per company. The unified `cleaning.html` page loads company data from `/api/companies/:key`, while daily assignment/rest state remains in browser `localStorage`.
+**Architecture:** Vercel serves the existing static HTML pages and routes `/api/*` to a single Node.js Function in `api/index.js`. Shared database and business logic lives in `lib/`, using MongoDB collections `companies`, `scheduleSystems`, and `scheduleRecords`. `cleaning.html` becomes the unified cleaning page selected by query parameter, while `排班表系统.html` stays as the operations schedule entry and loads config/saved records from APIs.
 
-**Tech Stack:** Node.js 20+, Express 4, MongoDB Node driver, dotenv, node:test, native browser JavaScript, existing CDN SheetJS for Excel export.
+**Tech Stack:** Vercel Functions, Node.js 20+, MongoDB Node driver, dotenv for local scripts, node:test, native browser JavaScript, existing CDN SheetJS/html2canvas assets.
 
 ## Global Constraints
 
+- Deploy on Vercel, not GitHub Pages.
 - Use MongoDB database name `dasaochupaiban`.
-- Store company documents in collection `companies`.
+- Store cleaning company documents in collection `companies`.
+- Store operations schedule config in collection `scheduleSystems`.
+- Store saved operations schedules in collection `scheduleRecords`.
 - Company keys are exactly `wuhan` and `yichang`.
+- Operations schedule key is exactly `operations`.
+- Keep homepage with three entries.
+- Operations entry remains `排班表系统.html`.
+- Cleaning entries route to `cleaning.html?company=yichang` and `cleaning.html?company=wuhan`.
 - Do not commit the real MongoDB connection string.
-- Do not commit `server/.env`.
+- Do not commit `.env`, `.env.local`, or Vercel local environment files.
+- Configure `MONGODB_URI` in Vercel environment variables.
 - No authentication or password protection is required in this version.
-- Keep `武汉公司大扫除安排表.html` and `销售部大扫除安排表.html` as fallback pages.
-- Assignment state and rest state remain in browser `localStorage`.
-- Base configuration in MongoDB includes employees, areas, tasks, fixed assignments, `storageKey`, and display labels.
-- Avoid changing unrelated scheduling pages.
+- Keep `武汉公司大扫除安排表.html` and `销售部大扫除安排表.html` as fallback pages until the unified cleaning page is verified.
 
 ---
 
 ## File Structure
 
-- Create `server/package.json`: backend scripts and dependencies.
-- Create `server/.gitignore`: ignore `.env`, `node_modules`, coverage/log artifacts.
-- Create `server/.env.example`: safe template for `MONGODB_URI` and `PORT`.
-- Create `server/src/db.js`: MongoDB client connection helpers.
-- Create `server/src/seedData.js`: Wuhan/Yichang seed documents extracted from existing HTML pages.
-- Create `server/src/repositories/companyRepository.js`: all data access and mutation rules.
-- Create `server/src/routes/companyRoutes.js`: company read and edit REST routes.
-- Create `server/src/routes/adminRoutes.js`: seed endpoint.
-- Create `server/src/app.js`: Express app composition, JSON parsing, routes, static serving, errors.
-- Create `server/src/server.js`: process entrypoint.
-- Create `server/scripts/seed.js`: CLI seed command.
-- Create `server/test/companyRepository.test.js`: repository unit tests using an in-memory fake collection.
-- Create `server/test/companyApi.test.js`: API behavior tests using a fake repository injection.
-- Create `cleaning.html`: unified frontend page.
-- Modify `index.html`: add/link the unified cleaning page, keeping old pages available.
+- Create `package.json`: root project scripts and dependencies for Vercel.
+- Create `vercel.json`: rewrites `/api/*` to `api/index.js`.
+- Create `.env.example`: safe template for local and Vercel environment variables.
+- Modify `.gitignore`: ignore env files and dependencies.
+- Create `api/index.js`: single Vercel Function entrypoint.
+- Create `lib/db.js`: cached MongoDB connection.
+- Create `lib/apiHandler.js`: method/path router for all API endpoints.
+- Create `lib/http.js`: request parsing, response helpers, and HTTP errors.
+- Create `lib/seedData.js`: cleaning and operations schedule seed documents.
+- Create `lib/repositories/companyRepository.js`: cleaning company read/edit rules.
+- Create `lib/repositories/scheduleRepository.js`: operations schedule config and record rules.
+- Create `scripts/seed.js`: CLI seed command.
+- Create tests under `test/`.
+- Create `cleaning.html`: unified API-backed cleaning page.
+- Modify `排班表系统.html`: API-backed operations schedule page.
+- Modify `index.html`: keep three entries and route cleaning cards to the unified page.
 
 ---
 
-### Task 1: Backend Project Skeleton
+### Task 1: Root Vercel Project Skeleton
 
 **Files:**
-- Create: `server/package.json`
-- Create: `server/.gitignore`
-- Create: `server/.env.example`
-- Create: `server/src/db.js`
-- Create: `server/src/app.js`
-- Create: `server/src/server.js`
-- Test: `server/test/appSmoke.test.js`
+- Create: `package.json`
+- Create: `vercel.json`
+- Create: `.env.example`
+- Modify: `.gitignore`
+- Create: `api/index.js`
+- Create: `lib/http.js`
+- Create: `lib/apiHandler.js`
+- Test: `test/apiHandler.test.js`
 
 **Interfaces:**
-- Produces: `createApp(options?: { repository?: CompanyRepository, staticRoot?: string }): express.Application`
-- Produces: `connectToDatabase(uri: string, dbName: string): Promise<{ client: MongoClient, db: Db }>`
+- Produces: `handleApiRequest(req, res, dependencies): Promise<void>`
+- Produces: `sendJson(res, statusCode, body): void`
+- Produces: `createHttpError(statusCode, code, message): Error`
 - Consumes: no prior task output.
 
-- [ ] **Step 1: Create backend package metadata**
+- [ ] **Step 1: Create project metadata**
 
-Create `server/package.json`:
+Create `package.json`:
 
 ```json
 {
-  "name": "dasaochupaiban-server",
+  "name": "tuozhuai-paibanbiao",
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node src/server.js",
+    "dev": "vercel dev",
     "seed": "node scripts/seed.js",
-    "test": "node --test"
+    "test": "node --test",
+    "start": "vercel dev"
   },
   "dependencies": {
+    "@vercel/node": "^3.2.18",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
     "mongodb": "^6.8.0"
   },
   "devDependencies": {
-    "supertest": "^7.0.0"
+    "vercel": "^35.2.3"
   }
 }
 ```
 
-- [ ] **Step 2: Add backend ignore and env template**
+Create `vercel.json`:
 
-Create `server/.gitignore`:
+```json
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.js" }
+  ]
+}
+```
+
+Create `.env.example`:
+
+```text
+MONGODB_URI=<mongodb connection string>
+```
+
+Append to `.gitignore` if not already present:
 
 ```gitignore
 node_modules/
 .env
-coverage/
-npm-debug.log*
+.env.local
+.vercel/
 ```
 
-Create `server/.env.example`:
+- [ ] **Step 2: Write failing health route test**
 
-```text
-MONGODB_URI=mongodb://user:password@example-host:27017/?directConnection=true
-PORT=3000
-```
-
-- [ ] **Step 3: Write a failing smoke test**
-
-Create `server/test/appSmoke.test.js`:
+Create `test/apiHandler.test.js`:
 
 ```js
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const request = require('supertest');
-const { createApp } = require('../src/app');
+const { handleApiRequest } = require('../lib/apiHandler');
 
-test('GET /api/health returns ok status', async () => {
-  const app = createApp({
-    repository: {},
-    staticRoot: process.cwd()
-  });
+function createMockResponse() {
+  return {
+    statusCode: 0,
+    headers: {},
+    body: undefined,
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
+    end(value) {
+      this.body = value;
+    }
+  };
+}
 
-  const response = await request(app).get('/api/health').expect(200);
+test('GET /api/health returns ok', async () => {
+  const req = { method: 'GET', url: '/api/health' };
+  const res = createMockResponse();
 
-  assert.equal(response.body.status, 'ok');
-  assert.equal(response.body.database, 'dasaochupaiban');
+  await handleApiRequest(req, res, {});
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body), { status: 'ok', database: 'dasaochupaiban' });
 });
 ```
 
-- [ ] **Step 4: Run test to verify it fails**
+- [ ] **Step 3: Run test to verify it fails**
 
 Run:
 
 ```bash
-cd server
 npm install
 npm test -- --test-name-pattern "GET /api/health"
 ```
 
-Expected: FAIL because `../src/app` does not exist.
+Expected: FAIL because `lib/apiHandler.js` does not exist.
 
-- [ ] **Step 5: Implement minimal app and database helpers**
+- [ ] **Step 4: Implement HTTP helpers and API handler**
 
-Create `server/src/db.js`:
+Create `lib/http.js`:
 
 ```js
-const { MongoClient } = require('mongodb');
+function sendJson(res, statusCode, body) {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(JSON.stringify(body));
+}
 
-async function connectToDatabase(uri, dbName) {
-  if (!uri || !uri.trim()) {
-    throw new Error('MONGODB_URI is required');
+function createHttpError(statusCode, code, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.code = code;
+  return error;
+}
+
+function parseApiPath(url) {
+  const parsed = new URL(url, 'http://localhost');
+  return parsed.pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+}
+
+async function readJsonBody(req) {
+  if (req.body && typeof req.body === 'object') return req.body;
+  const chunks = [];
+  for await (const chunk of req) chunks.push(Buffer.from(chunk));
+  const raw = Buffer.concat(chunks).toString('utf8');
+  if (!raw) return {};
+  return JSON.parse(raw);
+}
+
+module.exports = {
+  sendJson,
+  createHttpError,
+  parseApiPath,
+  readJsonBody
+};
+```
+
+Create `lib/apiHandler.js`:
+
+```js
+const { sendJson, parseApiPath } = require('./http');
+
+async function handleApiRequest(req, res, dependencies = {}) {
+  try {
+    const parts = parseApiPath(req.url);
+
+    if (req.method === 'GET' && parts.length === 1 && parts[0] === 'health') {
+      sendJson(res, 200, { status: 'ok', database: 'dasaochupaiban' });
+      return;
+    }
+
+    sendJson(res, 404, { error: 'not_found', message: 'API route not found' });
+  } catch (error) {
+    sendJson(res, error.statusCode || 500, {
+      error: error.code || 'internal_error',
+      message: error.message || 'Internal server error'
+    });
   }
-
-  const client = new MongoClient(uri);
-  await client.connect();
-  return { client, db: client.db(dbName) };
 }
 
-module.exports = { connectToDatabase };
+module.exports = { handleApiRequest };
 ```
 
-Create `server/src/app.js`:
+Create `api/index.js`:
 
 ```js
-const express = require('express');
-const path = require('node:path');
+const { handleApiRequest } = require('../lib/apiHandler');
+const { getDatabase } = require('../lib/db');
+const { createCompanyRepository } = require('../lib/repositories/companyRepository');
+const { createScheduleRepository } = require('../lib/repositories/scheduleRepository');
 
-function createApp(options = {}) {
-  const app = express();
-  const staticRoot = options.staticRoot || path.resolve(__dirname, '..', '..');
-
-  app.use(express.json());
-
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', database: 'dasaochupaiban' });
+module.exports = async function api(req, res) {
+  const db = await getDatabase();
+  await handleApiRequest(req, res, {
+    companyRepository: createCompanyRepository(db.collection('companies')),
+    scheduleRepository: createScheduleRepository(
+      db.collection('scheduleSystems'),
+      db.collection('scheduleRecords')
+    )
   });
-
-  app.use(express.static(staticRoot));
-
-  app.use((err, _req, res, _next) => {
-    const status = err.statusCode || 500;
-    res.status(status).json({
-      error: err.code || 'internal_error',
-      message: err.message || 'Internal server error'
-    });
-  });
-
-  return app;
-}
-
-module.exports = { createApp };
+};
 ```
 
-Create `server/src/server.js`:
+`api/index.js` will not pass until later repository tasks create the imported modules. That is acceptable because this task's test imports only `lib/apiHandler.js`.
 
-```js
-require('dotenv').config();
-
-const path = require('node:path');
-const { createApp } = require('./app');
-const { connectToDatabase } = require('./db');
-
-async function main() {
-  const port = Number(process.env.PORT || 3000);
-  const { client, db } = await connectToDatabase(process.env.MONGODB_URI, 'dasaochupaiban');
-  const repository = { db, client };
-  const app = createApp({
-    repository,
-    staticRoot: path.resolve(__dirname, '..', '..')
-  });
-
-  const server = app.listen(port, () => {
-    console.log(`Dasaochupaiban server listening on http://localhost:${port}`);
-  });
-
-  process.on('SIGINT', async () => {
-    server.close(async () => {
-      await client.close();
-      process.exit(0);
-    });
-  });
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
-```
-
-- [ ] **Step 6: Run test to verify it passes**
+- [ ] **Step 5: Run health test to verify it passes**
 
 Run:
 
 ```bash
-cd server
 npm test -- --test-name-pattern "GET /api/health"
 ```
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add server/package.json server/.gitignore server/.env.example server/src/db.js server/src/app.js server/src/server.js server/test/appSmoke.test.js
-git commit -m "feat: add express backend skeleton"
+git add package.json package-lock.json vercel.json .env.example .gitignore api/index.js lib/http.js lib/apiHandler.js test/apiHandler.test.js
+git commit -m "feat: add vercel api skeleton"
 ```
 
 ---
 
-### Task 2: Seed Data Documents
+### Task 2: MongoDB Connection and Seed Data
 
 **Files:**
-- Create: `server/src/seedData.js`
-- Create: `server/test/seedData.test.js`
+- Create: `lib/db.js`
+- Create: `lib/seedData.js`
+- Create: `scripts/seed.js`
+- Test: `test/seedData.test.js`
 
 **Interfaces:**
-- Produces: `seedCompanies: Array<CompanyDocument>`
-- Produces: `getSeedCompanies(): Array<CompanyDocument>`
-- Consumes: existing employees and areas from `武汉公司大扫除安排表.html` and `销售部大扫除安排表.html`.
+- Produces: `getDatabase(): Promise<Db>`
+- Produces: `closeDatabase(): Promise<void>`
+- Produces: `getSeedCompanies(): CompanyDocument[]`
+- Produces: `getSeedScheduleSystem(): ScheduleSystemDocument`
+- Consumes: data from current HTML files.
 
-- [ ] **Step 1: Write failing seed data test**
+- [ ] **Step 1: Write failing seed tests**
 
-Create `server/test/seedData.test.js`:
+Create `test/seedData.test.js`:
 
 ```js
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { getSeedCompanies } = require('../src/seedData');
+const { getSeedCompanies, getSeedScheduleSystem } = require('../lib/seedData');
 
-test('seed data contains Wuhan and Yichang cleaning configuration', () => {
+test('seed data contains cleaning companies and operations schedule', () => {
   const companies = getSeedCompanies();
-  const keys = companies.map((company) => company.key).sort();
+  const schedule = getSeedScheduleSystem();
 
-  assert.deepEqual(keys, ['wuhan', 'yichang']);
+  assert.deepEqual(companies.map((company) => company.key).sort(), ['wuhan', 'yichang']);
+  assert.ok(companies.find((company) => company.key === 'wuhan').employees.includes('张新业'));
+  assert.ok(companies.find((company) => company.key === 'yichang').fixedAssignments.some((item) => item.employeeName === '吴思湘'));
 
-  const wuhan = companies.find((company) => company.key === 'wuhan');
-  assert.ok(wuhan.employees.includes('张新业'));
-  assert.ok(wuhan.employees.includes('盛亚娥'));
-  assert.equal(wuhan.storageKey, 'whClean2');
-  assert.ok(wuhan.areas.some((area) => area.name === '办公区'));
-  assert.ok(wuhan.fixedAssignments.some((item) => item.employeeName === '盛亚娥'));
-
-  const yichang = companies.find((company) => company.key === 'yichang');
-  assert.ok(yichang.employees.includes('吴思湘'));
-  assert.ok(yichang.employees.includes('徐晓辉'));
-  assert.equal(yichang.storageKey, 'ycClean2');
-  assert.ok(yichang.areas.some((area) => area.name === '大厅'));
-  assert.equal(yichang.fixedAssignments.length, 2);
+  assert.equal(schedule.key, 'operations');
+  assert.deepEqual(schedule.employees, ['杨有淇', '陈吉舒', '王涛', '王清月', '袁丽妮', '陈冉']);
+  assert.deepEqual(schedule.dayNames, ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天']);
+  assert.deepEqual(schedule.defaultSelectedDayIndexes, [5, 6]);
+  assert.equal(schedule.rules.sundayWorkCount, 2);
+  assert.equal(schedule.rules.twoDayComplement, true);
 });
 ```
 
@@ -294,15 +318,49 @@ test('seed data contains Wuhan and Yichang cleaning configuration', () => {
 Run:
 
 ```bash
-cd server
 npm test -- --test-name-pattern "seed data contains"
 ```
 
-Expected: FAIL because `src/seedData.js` does not exist.
+Expected: FAIL because `lib/seedData.js` does not exist.
 
-- [ ] **Step 3: Implement seed data**
+- [ ] **Step 3: Implement database helper**
 
-Create `server/src/seedData.js`:
+Create `lib/db.js`:
+
+```js
+const { MongoClient } = require('mongodb');
+
+let cachedClient = null;
+let cachedDb = null;
+
+async function getDatabase() {
+  if (cachedDb) return cachedDb;
+
+  const uri = process.env.MONGODB_URI;
+  if (!uri || !uri.trim()) {
+    throw new Error('MONGODB_URI is required');
+  }
+
+  cachedClient = new MongoClient(uri);
+  await cachedClient.connect();
+  cachedDb = cachedClient.db('dasaochupaiban');
+  return cachedDb;
+}
+
+async function closeDatabase() {
+  if (cachedClient) {
+    await cachedClient.close();
+  }
+  cachedClient = null;
+  cachedDb = null;
+}
+
+module.exports = { getDatabase, closeDatabase };
+```
+
+- [ ] **Step 4: Implement seed data**
+
+Create `lib/seedData.js` with the current Wuhan, Yichang, and operations schedule data:
 
 ```js
 const seedCompanies = [
@@ -326,11 +384,7 @@ const seedCompanies = [
       { name: '休息区', tasks: [{ name: '擦荣誉墙' }, { name: '擦桌椅及摆放' }, { name: '地面吸尘' }] }
     ],
     fixedAssignments: [
-      {
-        areaName: '人事办公室',
-        taskName: '人事办公室清洁（固定：盛亚娥）',
-        employeeName: '盛亚娥'
-      }
+      { areaName: '人事办公室', taskName: '人事办公室清洁（固定：盛亚娥）', employeeName: '盛亚娥' }
     ]
   },
   {
@@ -343,8 +397,7 @@ const seedCompanies = [
       '王清月', '陶思雨', '杨有淇', '冯杉杉',
       '吴思湘', '陈吉姝', '袁丽妮',
       '陈冉', '徐晓辉', '秦金城',
-      '赵春艳', '周广鑫',
-      '周红莲'
+      '赵春艳', '周广鑫', '周红莲'
     ],
     areas: [
       { name: '大厅', tasks: [{ name: '扫地' }, { name: '拖地（第1人）' }, { name: '拖地（第2人）' }, { name: '擦桌椅墙饰饮水机（第1人）' }, { name: '擦桌椅墙饰饮水机（第2人）' }] },
@@ -355,19 +408,24 @@ const seedCompanies = [
       { name: '大厅角落', tasks: [{ name: '大厅角落清洁（固定：徐晓辉）' }] }
     ],
     fixedAssignments: [
-      {
-        areaName: '前台',
-        taskName: '前台清洁（固定：吴思湘）',
-        employeeName: '吴思湘'
-      },
-      {
-        areaName: '大厅角落',
-        taskName: '大厅角落清洁（固定：徐晓辉）',
-        employeeName: '徐晓辉'
-      }
+      { areaName: '前台', taskName: '前台清洁（固定：吴思湘）', employeeName: '吴思湘' },
+      { areaName: '大厅角落', taskName: '大厅角落清洁（固定：徐晓辉）', employeeName: '徐晓辉' }
     ]
   }
 ];
+
+const seedScheduleSystem = {
+  key: 'operations',
+  name: '排班表系统',
+  storageKey: 'schedule_v2',
+  employees: ['杨有淇', '陈吉舒', '王涛', '王清月', '袁丽妮', '陈冉'],
+  dayNames: ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期天'],
+  defaultSelectedDayIndexes: [5, 6],
+  rules: {
+    sundayWorkCount: 2,
+    twoDayComplement: true
+  }
+};
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -377,154 +435,155 @@ function getSeedCompanies() {
   return clone(seedCompanies);
 }
 
-module.exports = { seedCompanies, getSeedCompanies };
+function getSeedScheduleSystem() {
+  return clone(seedScheduleSystem);
+}
+
+module.exports = {
+  getSeedCompanies,
+  getSeedScheduleSystem
+};
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 5: Add seed script**
+
+Create `scripts/seed.js`:
+
+```js
+require('dotenv').config();
+
+const { getDatabase, closeDatabase } = require('../lib/db');
+const { getSeedCompanies, getSeedScheduleSystem } = require('../lib/seedData');
+
+async function main() {
+  const db = await getDatabase();
+  const now = new Date().toISOString();
+
+  for (const company of getSeedCompanies()) {
+    await db.collection('companies').replaceOne(
+      { key: company.key },
+      { ...company, updatedAt: now },
+      { upsert: true }
+    );
+  }
+
+  const scheduleSystem = getSeedScheduleSystem();
+  await db.collection('scheduleSystems').replaceOne(
+    { key: scheduleSystem.key },
+    { ...scheduleSystem, updatedAt: now },
+    { upsert: true }
+  );
+
+  console.log('Seeded companies: wuhan, yichang');
+  console.log('Seeded schedule system: operations');
+}
+
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => closeDatabase());
+```
+
+- [ ] **Step 6: Run seed tests**
 
 Run:
 
 ```bash
-cd server
 npm test -- --test-name-pattern "seed data contains"
 ```
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add server/src/seedData.js server/test/seedData.test.js
-git commit -m "feat: add cleaning seed data"
+git add lib/db.js lib/seedData.js scripts/seed.js test/seedData.test.js
+git commit -m "feat: add mongo seed data"
 ```
 
 ---
 
-### Task 3: Company Repository and Mutation Rules
+### Task 3: Cleaning Company Repository and API Routes
 
 **Files:**
-- Create: `server/src/repositories/companyRepository.js`
-- Create: `server/test/companyRepository.test.js`
+- Create: `lib/repositories/companyRepository.js`
+- Modify: `lib/apiHandler.js`
+- Test: `test/companyApi.test.js`
 
 **Interfaces:**
-- Consumes: `getSeedCompanies()` from `server/src/seedData.js`
-- Produces: `createCompanyRepository(collection)`
-- Produces methods:
-  - `listCompanies(): Promise<Array<{ key, name, subtitle, storageKey }>>`
-  - `getCompany(key: string): Promise<CompanyDocument | null>`
-  - `seedCompanies(companies: CompanyDocument[]): Promise<void>`
-  - `addEmployee(key: string, name: string): Promise<CompanyDocument>`
-  - `deleteEmployee(key: string, employeeName: string): Promise<CompanyDocument>`
-  - `addArea(key: string, name: string, firstTaskName: string): Promise<CompanyDocument>`
-  - `deleteArea(key: string, areaName: string): Promise<CompanyDocument>`
-  - `addTask(key: string, areaName: string, taskName: string): Promise<CompanyDocument>`
-  - `deleteTask(key: string, areaName: string, taskName: string): Promise<CompanyDocument>`
+- Consumes: `companyRepository` dependency in `handleApiRequest`.
+- Produces cleaning APIs:
+  - `GET /api/companies`
+  - `GET /api/companies/:key`
+  - employee, area, and task mutation routes.
 
-- [ ] **Step 1: Write failing repository tests**
+- [ ] **Step 1: Write failing company API tests**
 
-Create `server/test/companyRepository.test.js`:
+Create `test/companyApi.test.js` with fake repositories:
 
 ```js
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { createCompanyRepository } = require('../src/repositories/companyRepository');
-const { getSeedCompanies } = require('../src/seedData');
+const { handleApiRequest } = require('../lib/apiHandler');
+const { getSeedCompanies } = require('../lib/seedData');
 
-function createFakeCollection(initialDocuments = []) {
-  const documents = initialDocuments.map((doc) => structuredClone(doc));
-
+function response() {
   return {
-    async find() {
-      return {
-        sort() {
-          return this;
-        },
-        project() {
-          return this;
-        },
-        async toArray() {
-          return documents.map((doc) => structuredClone(doc));
-        }
-      };
+    statusCode: 0,
+    headers: {},
+    body: '',
+    setHeader(name, value) { this.headers[name] = value; },
+    end(value) { this.body = value; }
+  };
+}
+
+function createCompanyRepo() {
+  const companies = getSeedCompanies();
+  return {
+    async listCompanies() {
+      return companies.map(({ key, name, subtitle, storageKey }) => ({ key, name, subtitle, storageKey }));
     },
-    async findOne(query) {
-      const found = documents.find((doc) => doc.key === query.key);
-      return found ? structuredClone(found) : null;
+    async getCompany(key) {
+      return companies.find((company) => company.key === key) || null;
     },
-    async replaceOne(query, replacement, options) {
-      const index = documents.findIndex((doc) => doc.key === query.key);
-      if (index >= 0) {
-        documents[index] = structuredClone(replacement);
-      } else if (options && options.upsert) {
-        documents.push(structuredClone(replacement));
+    async addEmployee(key, name) {
+      const company = companies.find((item) => item.key === key);
+      if (company.employees.includes(name)) {
+        const error = new Error('duplicate');
+        error.statusCode = 409;
+        error.code = 'duplicate_employee';
+        throw error;
       }
-      return { acknowledged: true };
+      company.employees.push(name);
+      return company;
     }
   };
 }
 
-test('repository lists companies and gets one company', async () => {
-  const repository = createCompanyRepository(createFakeCollection(getSeedCompanies()));
+test('company APIs list, read, and add employees', async () => {
+  const dependencies = { companyRepository: createCompanyRepo() };
 
-  const companies = await repository.listCompanies();
-  const wuhan = await repository.getCompany('wuhan');
+  const listRes = response();
+  await handleApiRequest({ method: 'GET', url: '/api/companies' }, listRes, dependencies);
+  assert.equal(listRes.statusCode, 200);
+  assert.deepEqual(JSON.parse(listRes.body).map((item) => item.key).sort(), ['wuhan', 'yichang']);
 
-  assert.deepEqual(companies.map((company) => company.key).sort(), ['wuhan', 'yichang']);
-  assert.equal(wuhan.name, '武汉公司');
-  assert.ok(wuhan.employees.includes('张新业'));
-});
+  const getRes = response();
+  await handleApiRequest({ method: 'GET', url: '/api/companies/wuhan' }, getRes, dependencies);
+  assert.equal(getRes.statusCode, 200);
+  assert.ok(JSON.parse(getRes.body).employees.includes('张新业'));
 
-test('repository adds employee and rejects duplicates', async () => {
-  const repository = createCompanyRepository(createFakeCollection(getSeedCompanies()));
-
-  const updated = await repository.addEmployee('wuhan', '测试员工');
-  assert.ok(updated.employees.includes('测试员工'));
-
-  await assert.rejects(
-    () => repository.addEmployee('wuhan', '测试员工'),
-    { statusCode: 409, code: 'duplicate_employee' }
-  );
-});
-
-test('repository refuses deleting fixed assignment employee', async () => {
-  const repository = createCompanyRepository(createFakeCollection(getSeedCompanies()));
-
-  await assert.rejects(
-    () => repository.deleteEmployee('wuhan', '盛亚娥'),
-    { statusCode: 409, code: 'fixed_employee' }
-  );
-});
-
-test('repository adds area, rejects duplicate area, and deletes area', async () => {
-  const repository = createCompanyRepository(createFakeCollection(getSeedCompanies()));
-
-  const added = await repository.addArea('wuhan', '测试区域', '测试任务');
-  assert.ok(added.areas.some((area) => area.name === '测试区域'));
-
-  await assert.rejects(
-    () => repository.addArea('wuhan', '测试区域', '测试任务2'),
-    { statusCode: 409, code: 'duplicate_area' }
-  );
-
-  const deleted = await repository.deleteArea('wuhan', '测试区域');
-  assert.equal(deleted.areas.some((area) => area.name === '测试区域'), false);
-});
-
-test('repository adds and deletes task with duplicate checks', async () => {
-  const repository = createCompanyRepository(createFakeCollection(getSeedCompanies()));
-
-  const added = await repository.addTask('wuhan', '办公区', '测试擦窗');
-  const area = added.areas.find((item) => item.name === '办公区');
-  assert.ok(area.tasks.some((task) => task.name === '测试擦窗'));
-
-  await assert.rejects(
-    () => repository.addTask('wuhan', '办公区', '测试擦窗'),
-    { statusCode: 409, code: 'duplicate_task' }
-  );
-
-  const deleted = await repository.deleteTask('wuhan', '办公区', '测试擦窗');
-  const updatedArea = deleted.areas.find((item) => item.name === '办公区');
-  assert.equal(updatedArea.tasks.some((task) => task.name === '测试擦窗'), false);
+  const addReq = {
+    method: 'POST',
+    url: '/api/companies/wuhan/employees',
+    body: { name: '测试员工' }
+  };
+  const addRes = response();
+  await handleApiRequest(addReq, addRes, dependencies);
+  assert.equal(addRes.statusCode, 200);
+  assert.ok(JSON.parse(addRes.body).employees.includes('测试员工'));
 });
 ```
 
@@ -533,25 +592,19 @@ test('repository adds and deletes task with duplicate checks', async () => {
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "repository"
+npm test -- --test-name-pattern "company APIs"
 ```
 
-Expected: FAIL because repository module does not exist.
+Expected: FAIL because company routes are not handled.
 
-- [ ] **Step 3: Implement repository**
+- [ ] **Step 3: Implement company repository**
 
-Create `server/src/repositories/companyRepository.js`:
+Create `lib/repositories/companyRepository.js` with methods:
 
 ```js
-function createHttpError(statusCode, code, message) {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  error.code = code;
-  return error;
-}
+const { createHttpError } = require('../http');
 
-function normalizeName(name, fieldName = 'name') {
+function normalizeName(name, fieldName) {
   if (typeof name !== 'string' || !name.trim()) {
     throw createHttpError(400, 'invalid_name', `${fieldName} is required`);
   }
@@ -562,40 +615,22 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function withUpdatedAt(company) {
-  return { ...company, updatedAt: new Date().toISOString() };
-}
-
 function createCompanyRepository(collection) {
-  async function saveCompany(company) {
-    const next = withUpdatedAt(company);
+  async function save(company) {
+    const next = { ...company, updatedAt: new Date().toISOString() };
     await collection.replaceOne({ key: next.key }, next, { upsert: true });
     return clone(next);
   }
 
   async function requireCompany(key) {
     const company = await collection.findOne({ key });
-    if (!company) {
-      throw createHttpError(404, 'company_not_found', `Company ${key} was not found`);
-    }
+    if (!company) throw createHttpError(404, 'company_not_found', `Company ${key} was not found`);
     return company;
   }
 
   async function listCompanies() {
-    const cursor = await collection.find({});
-    const companies = await cursor.sort({ key: 1 }).project({
-      _id: 0,
-      key: 1,
-      name: 1,
-      subtitle: 1,
-      storageKey: 1
-    }).toArray();
-    return companies.map((company) => ({
-      key: company.key,
-      name: company.name,
-      subtitle: company.subtitle,
-      storageKey: company.storageKey
-    }));
+    const docs = await collection.find({}).project({ _id: 0, key: 1, name: 1, subtitle: 1, storageKey: 1 }).sort({ key: 1 }).toArray();
+    return docs.map((doc) => ({ key: doc.key, name: doc.name, subtitle: doc.subtitle, storageKey: doc.storageKey }));
   }
 
   async function getCompany(key) {
@@ -603,239 +638,244 @@ function createCompanyRepository(collection) {
     return company ? clone(company) : null;
   }
 
-  async function seedCompanies(companies) {
-    for (const company of companies) {
-      await saveCompany(company);
-    }
-  }
-
-  async function addEmployee(key, name) {
-    const employeeName = normalizeName(name, 'employee name');
+  async function addEmployee(key, rawName) {
+    const name = normalizeName(rawName, 'employee name');
     const company = await requireCompany(key);
-    if (company.employees.includes(employeeName)) {
-      throw createHttpError(409, 'duplicate_employee', `${employeeName} already exists`);
-    }
-    company.employees.push(employeeName);
-    return saveCompany(company);
+    if (company.employees.includes(name)) throw createHttpError(409, 'duplicate_employee', `${name} already exists`);
+    company.employees.push(name);
+    return save(company);
   }
 
-  async function deleteEmployee(key, employeeNameInput) {
-    const employeeName = normalizeName(employeeNameInput, 'employee name');
+  async function deleteEmployee(key, rawName) {
+    const name = normalizeName(rawName, 'employee name');
     const company = await requireCompany(key);
-    const isFixed = company.fixedAssignments.some((item) => item.employeeName === employeeName);
-    if (isFixed) {
-      throw createHttpError(409, 'fixed_employee', `${employeeName} is a fixed assignment employee`);
+    if (company.fixedAssignments.some((item) => item.employeeName === name)) {
+      throw createHttpError(409, 'fixed_employee', `${name} is a fixed assignment employee`);
     }
-    company.employees = company.employees.filter((item) => item !== employeeName);
-    return saveCompany(company);
+    company.employees = company.employees.filter((item) => item !== name);
+    return save(company);
   }
 
-  async function addArea(key, name, firstTaskName) {
-    const areaName = normalizeName(name, 'area name');
-    const taskName = normalizeName(firstTaskName, 'first task name');
+  async function addArea(key, rawName, rawFirstTaskName) {
+    const name = normalizeName(rawName, 'area name');
+    const firstTaskName = normalizeName(rawFirstTaskName, 'first task name');
     const company = await requireCompany(key);
-    if (company.areas.some((area) => area.name === areaName)) {
-      throw createHttpError(409, 'duplicate_area', `${areaName} already exists`);
-    }
-    company.areas.push({ name: areaName, tasks: [{ name: taskName }] });
-    return saveCompany(company);
+    if (company.areas.some((area) => area.name === name)) throw createHttpError(409, 'duplicate_area', `${name} already exists`);
+    company.areas.push({ name, tasks: [{ name: firstTaskName }] });
+    return save(company);
   }
 
-  async function deleteArea(key, areaNameInput) {
-    const areaName = normalizeName(areaNameInput, 'area name');
+  async function deleteArea(key, rawName) {
+    const name = normalizeName(rawName, 'area name');
     const company = await requireCompany(key);
-    company.areas = company.areas.filter((area) => area.name !== areaName);
-    company.fixedAssignments = company.fixedAssignments.filter((item) => item.areaName !== areaName);
-    return saveCompany(company);
+    company.areas = company.areas.filter((area) => area.name !== name);
+    company.fixedAssignments = company.fixedAssignments.filter((item) => item.areaName !== name);
+    return save(company);
   }
 
-  async function addTask(key, areaNameInput, taskNameInput) {
-    const areaName = normalizeName(areaNameInput, 'area name');
-    const taskName = normalizeName(taskNameInput, 'task name');
+  async function addTask(key, rawAreaName, rawTaskName) {
+    const areaName = normalizeName(rawAreaName, 'area name');
+    const taskName = normalizeName(rawTaskName, 'task name');
     const company = await requireCompany(key);
     const area = company.areas.find((item) => item.name === areaName);
-    if (!area) {
-      throw createHttpError(404, 'area_not_found', `${areaName} was not found`);
-    }
-    if (area.tasks.some((task) => task.name === taskName)) {
-      throw createHttpError(409, 'duplicate_task', `${taskName} already exists`);
-    }
+    if (!area) throw createHttpError(404, 'area_not_found', `${areaName} was not found`);
+    if (area.tasks.some((task) => task.name === taskName)) throw createHttpError(409, 'duplicate_task', `${taskName} already exists`);
     area.tasks.push({ name: taskName });
-    return saveCompany(company);
+    return save(company);
   }
 
-  async function deleteTask(key, areaNameInput, taskNameInput) {
-    const areaName = normalizeName(areaNameInput, 'area name');
-    const taskName = normalizeName(taskNameInput, 'task name');
+  async function deleteTask(key, rawAreaName, rawTaskName) {
+    const areaName = normalizeName(rawAreaName, 'area name');
+    const taskName = normalizeName(rawTaskName, 'task name');
     const company = await requireCompany(key);
     const area = company.areas.find((item) => item.name === areaName);
-    if (!area) {
-      throw createHttpError(404, 'area_not_found', `${areaName} was not found`);
-    }
-    const isFixed = company.fixedAssignments.some((item) => item.areaName === areaName && item.taskName === taskName);
-    if (isFixed) {
+    if (!area) throw createHttpError(404, 'area_not_found', `${areaName} was not found`);
+    if (company.fixedAssignments.some((item) => item.areaName === areaName && item.taskName === taskName)) {
       throw createHttpError(409, 'fixed_task', `${taskName} is a fixed assignment task`);
     }
     area.tasks = area.tasks.filter((task) => task.name !== taskName);
-    company.fixedAssignments = company.fixedAssignments.filter((item) => !(item.areaName === areaName && item.taskName === taskName));
-    return saveCompany(company);
+    return save(company);
   }
 
-  return {
-    listCompanies,
-    getCompany,
-    seedCompanies,
-    addEmployee,
-    deleteEmployee,
-    addArea,
-    deleteArea,
-    addTask,
-    deleteTask
-  };
+  return { listCompanies, getCompany, addEmployee, deleteEmployee, addArea, deleteArea, addTask, deleteTask };
 }
 
-module.exports = { createCompanyRepository, createHttpError };
+module.exports = { createCompanyRepository };
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [ ] **Step 4: Route company APIs in `lib/apiHandler.js`**
+
+Update `handleApiRequest` to dispatch:
+
+```js
+const { sendJson, parseApiPath, readJsonBody } = require('./http');
+
+async function handleApiRequest(req, res, dependencies = {}) {
+  try {
+    const parts = parseApiPath(req.url);
+    const companyRepository = dependencies.companyRepository;
+
+    if (req.method === 'GET' && parts.length === 1 && parts[0] === 'health') {
+      sendJson(res, 200, { status: 'ok', database: 'dasaochupaiban' });
+      return;
+    }
+
+    if (parts[0] === 'companies' && companyRepository) {
+      if (req.method === 'GET' && parts.length === 1) {
+        sendJson(res, 200, await companyRepository.listCompanies());
+        return;
+      }
+      if (req.method === 'GET' && parts.length === 2) {
+        const company = await companyRepository.getCompany(parts[1]);
+        if (!company) {
+          sendJson(res, 404, { error: 'company_not_found', message: `Company ${parts[1]} was not found` });
+          return;
+        }
+        sendJson(res, 200, company);
+        return;
+      }
+      if (req.method === 'POST' && parts.length === 3 && parts[2] === 'employees') {
+        const body = await readJsonBody(req);
+        sendJson(res, 200, await companyRepository.addEmployee(parts[1], body.name));
+        return;
+      }
+      if (req.method === 'DELETE' && parts.length === 4 && parts[2] === 'employees') {
+        sendJson(res, 200, await companyRepository.deleteEmployee(parts[1], parts[3]));
+        return;
+      }
+      if (req.method === 'POST' && parts.length === 3 && parts[2] === 'areas') {
+        const body = await readJsonBody(req);
+        sendJson(res, 200, await companyRepository.addArea(parts[1], body.name, body.firstTaskName));
+        return;
+      }
+      if (req.method === 'DELETE' && parts.length === 4 && parts[2] === 'areas') {
+        sendJson(res, 200, await companyRepository.deleteArea(parts[1], parts[3]));
+        return;
+      }
+      if (req.method === 'POST' && parts.length === 5 && parts[2] === 'areas' && parts[4] === 'tasks') {
+        const body = await readJsonBody(req);
+        sendJson(res, 200, await companyRepository.addTask(parts[1], parts[3], body.name));
+        return;
+      }
+      if (req.method === 'DELETE' && parts.length === 6 && parts[2] === 'areas' && parts[4] === 'tasks') {
+        sendJson(res, 200, await companyRepository.deleteTask(parts[1], parts[3], parts[5]));
+        return;
+      }
+    }
+
+    sendJson(res, 404, { error: 'not_found', message: 'API route not found' });
+  } catch (error) {
+    sendJson(res, error.statusCode || 500, {
+      error: error.code || 'internal_error',
+      message: error.message || 'Internal server error'
+    });
+  }
+}
+
+module.exports = { handleApiRequest };
+```
+
+- [ ] **Step 5: Run company API tests**
 
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "repository"
+npm test -- --test-name-pattern "company APIs|GET /api/health"
 ```
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add server/src/repositories/companyRepository.js server/test/companyRepository.test.js
-git commit -m "feat: add company repository rules"
+git add lib/repositories/companyRepository.js lib/apiHandler.js test/companyApi.test.js
+git commit -m "feat: add cleaning company apis"
 ```
 
 ---
 
-### Task 4: REST API Routes and Seed Command
+### Task 4: Operations Schedule Repository and API Routes
 
 **Files:**
-- Create: `server/src/routes/companyRoutes.js`
-- Create: `server/src/routes/adminRoutes.js`
-- Create: `server/scripts/seed.js`
-- Modify: `server/src/app.js`
-- Modify: `server/src/server.js`
-- Test: `server/test/companyApi.test.js`
+- Create: `lib/repositories/scheduleRepository.js`
+- Modify: `lib/apiHandler.js`
+- Test: `test/scheduleApi.test.js`
 
 **Interfaces:**
-- Consumes: repository methods from Task 3.
-- Produces REST endpoints:
-  - `GET /api/companies`
-  - `GET /api/companies/:key`
-  - `POST /api/companies/:key/employees`
-  - `DELETE /api/companies/:key/employees/:employeeName`
-  - `POST /api/companies/:key/areas`
-  - `DELETE /api/companies/:key/areas/:areaName`
-  - `POST /api/companies/:key/areas/:areaName/tasks`
-  - `DELETE /api/companies/:key/areas/:areaName/tasks/:taskName`
-  - `POST /api/admin/seed`
+- Consumes: `scheduleRepository` dependency in `handleApiRequest`.
+- Produces:
+  - `GET /api/schedule-systems/:key`
+  - `POST /api/schedule-systems/:key/employees`
+  - `DELETE /api/schedule-systems/:key/employees/:employeeName`
+  - `GET /api/schedule-systems/:key/records/latest`
+  - `POST /api/schedule-systems/:key/records`
 
-- [ ] **Step 1: Write failing API tests**
+- [ ] **Step 1: Write failing schedule API tests**
 
-Create `server/test/companyApi.test.js`:
+Create `test/scheduleApi.test.js`:
 
 ```js
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const request = require('supertest');
-const { createApp } = require('../src/app');
-const { createCompanyRepository } = require('../src/repositories/companyRepository');
-const { getSeedCompanies } = require('../src/seedData');
+const { handleApiRequest } = require('../lib/apiHandler');
+const { getSeedScheduleSystem } = require('../lib/seedData');
 
-function createFakeCollection(initialDocuments = []) {
-  const documents = initialDocuments.map((doc) => structuredClone(doc));
-
+function response() {
   return {
-    async find() {
-      return {
-        sort() { return this; },
-        project() { return this; },
-        async toArray() { return documents.map((doc) => structuredClone(doc)); }
-      };
+    statusCode: 0,
+    headers: {},
+    body: '',
+    setHeader(name, value) { this.headers[name] = value; },
+    end(value) { this.body = value; }
+  };
+}
+
+function createScheduleRepo() {
+  const system = getSeedScheduleSystem();
+  let latest = null;
+  return {
+    async getScheduleSystem(key) {
+      return key === system.key ? system : null;
     },
-    async findOne(query) {
-      const found = documents.find((doc) => doc.key === query.key);
-      return found ? structuredClone(found) : null;
+    async addEmployee(_key, name) {
+      system.employees.push(name);
+      return system;
     },
-    async replaceOne(query, replacement, options) {
-      const index = documents.findIndex((doc) => doc.key === query.key);
-      if (index >= 0) documents[index] = structuredClone(replacement);
-      else if (options && options.upsert) documents.push(structuredClone(replacement));
-      return { acknowledged: true };
+    async deleteEmployee(_key, name) {
+      system.employees = system.employees.filter((employee) => employee !== name);
+      return system;
+    },
+    async saveRecord(systemKey, rows) {
+      latest = { systemKey, rows, version: 1 };
+      return latest;
+    },
+    async getLatestRecord() {
+      return latest;
     }
   };
 }
 
-function createTestApp() {
-  const repository = createCompanyRepository(createFakeCollection(getSeedCompanies()));
-  return createApp({ repository, staticRoot: process.cwd() });
-}
+test('schedule APIs read config and save latest record', async () => {
+  const dependencies = { scheduleRepository: createScheduleRepo() };
 
-test('company API reads companies and one company', async () => {
-  const app = createTestApp();
+  const configRes = response();
+  await handleApiRequest({ method: 'GET', url: '/api/schedule-systems/operations' }, configRes, dependencies);
+  assert.equal(configRes.statusCode, 200);
+  assert.ok(JSON.parse(configRes.body).employees.includes('杨有淇'));
 
-  const list = await request(app).get('/api/companies').expect(200);
-  assert.deepEqual(list.body.map((company) => company.key).sort(), ['wuhan', 'yichang']);
+  const saveRes = response();
+  await handleApiRequest({
+    method: 'POST',
+    url: '/api/schedule-systems/operations/records',
+    body: { rows: [{ name: '杨有淇', schedule: ['', '', '', '', '', 'work', 'rest'] }] }
+  }, saveRes, dependencies);
+  assert.equal(saveRes.statusCode, 200);
+  assert.equal(JSON.parse(saveRes.body).rows[0].name, '杨有淇');
 
-  const wuhan = await request(app).get('/api/companies/wuhan').expect(200);
-  assert.equal(wuhan.body.name, '武汉公司');
-  assert.ok(wuhan.body.employees.includes('张新业'));
-});
-
-test('company API mutates employees with conflict responses', async () => {
-  const app = createTestApp();
-
-  const added = await request(app)
-    .post('/api/companies/wuhan/employees')
-    .send({ name: '测试员工' })
-    .expect(200);
-  assert.ok(added.body.employees.includes('测试员工'));
-
-  const duplicate = await request(app)
-    .post('/api/companies/wuhan/employees')
-    .send({ name: '测试员工' })
-    .expect(409);
-  assert.equal(duplicate.body.error, 'duplicate_employee');
-
-  const fixed = await request(app)
-    .delete(encodeURI('/api/companies/wuhan/employees/盛亚娥'))
-    .expect(409);
-  assert.equal(fixed.body.error, 'fixed_employee');
-});
-
-test('company API mutates areas and tasks', async () => {
-  const app = createTestApp();
-
-  const area = await request(app)
-    .post('/api/companies/wuhan/areas')
-    .send({ name: '测试区域', firstTaskName: '测试任务' })
-    .expect(200);
-  assert.ok(area.body.areas.some((item) => item.name === '测试区域'));
-
-  const task = await request(app)
-    .post(encodeURI('/api/companies/wuhan/areas/测试区域/tasks'))
-    .send({ name: '第二任务' })
-    .expect(200);
-  const testArea = task.body.areas.find((item) => item.name === '测试区域');
-  assert.ok(testArea.tasks.some((item) => item.name === '第二任务'));
-
-  await request(app)
-    .delete(encodeURI('/api/companies/wuhan/areas/测试区域/tasks/第二任务'))
-    .expect(200);
-
-  await request(app)
-    .delete(encodeURI('/api/companies/wuhan/areas/测试区域'))
-    .expect(200);
+  const latestRes = response();
+  await handleApiRequest({ method: 'GET', url: '/api/schedule-systems/operations/records/latest' }, latestRes, dependencies);
+  assert.equal(latestRes.statusCode, 200);
+  assert.equal(JSON.parse(latestRes.body).rows[0].schedule[5], 'work');
 });
 ```
 
@@ -844,269 +884,282 @@ test('company API mutates areas and tasks', async () => {
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "company API"
+npm test -- --test-name-pattern "schedule APIs"
 ```
 
-Expected: FAIL because API routes are not registered.
+Expected: FAIL because schedule routes are not handled.
 
-- [ ] **Step 3: Implement routes**
+- [ ] **Step 3: Implement schedule repository**
 
-Create `server/src/routes/companyRoutes.js`:
+Create `lib/repositories/scheduleRepository.js`:
 
 ```js
-const express = require('express');
+const { createHttpError } = require('../http');
 
-function createCompanyRoutes(repository) {
-  const router = express.Router();
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 
-  router.get('/companies', async (_req, res, next) => {
-    try {
-      res.json(await repository.listCompanies());
-    } catch (error) {
-      next(error);
-    }
-  });
+function normalizeName(name) {
+  if (typeof name !== 'string' || !name.trim()) {
+    throw createHttpError(400, 'invalid_name', 'employee name is required');
+  }
+  return name.trim();
+}
 
-  router.get('/companies/:key', async (req, res, next) => {
-    try {
-      const company = await repository.getCompany(req.params.key);
-      if (!company) {
-        res.status(404).json({ error: 'company_not_found', message: `Company ${req.params.key} was not found` });
-        return;
+function createScheduleRepository(systemCollection, recordCollection) {
+  async function requireSystem(key) {
+    const system = await systemCollection.findOne({ key });
+    if (!system) throw createHttpError(404, 'schedule_system_not_found', `Schedule system ${key} was not found`);
+    return system;
+  }
+
+  async function saveSystem(system) {
+    const next = { ...system, updatedAt: new Date().toISOString() };
+    await systemCollection.replaceOne({ key: next.key }, next, { upsert: true });
+    return clone(next);
+  }
+
+  async function getScheduleSystem(key) {
+    const system = await systemCollection.findOne({ key });
+    return system ? clone(system) : null;
+  }
+
+  async function addEmployee(key, rawName) {
+    const name = normalizeName(rawName);
+    const system = await requireSystem(key);
+    if (system.employees.includes(name)) throw createHttpError(409, 'duplicate_employee', `${name} already exists`);
+    system.employees.push(name);
+    return saveSystem(system);
+  }
+
+  async function deleteEmployee(key, rawName) {
+    const name = normalizeName(rawName);
+    const system = await requireSystem(key);
+    system.employees = system.employees.filter((item) => item !== name);
+    return saveSystem(system);
+  }
+
+  async function saveRecord(key, rows) {
+    const system = await requireSystem(key);
+    if (!Array.isArray(rows)) throw createHttpError(400, 'invalid_schedule_rows', 'rows must be an array');
+    const validNames = new Set(system.employees);
+    rows.forEach((row) => {
+      if (!validNames.has(row.name)) throw createHttpError(400, 'invalid_schedule_employee', `${row.name} is not a valid employee`);
+      if (!Array.isArray(row.schedule) || row.schedule.length !== system.dayNames.length) {
+        throw createHttpError(400, 'invalid_schedule_length', `${row.name} schedule length is invalid`);
       }
-      res.json(company);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post('/companies/:key/employees', async (req, res, next) => {
-    try {
-      res.json(await repository.addEmployee(req.params.key, req.body.name));
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.delete('/companies/:key/employees/:employeeName', async (req, res, next) => {
-    try {
-      res.json(await repository.deleteEmployee(req.params.key, req.params.employeeName));
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post('/companies/:key/areas', async (req, res, next) => {
-    try {
-      res.json(await repository.addArea(req.params.key, req.body.name, req.body.firstTaskName));
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.delete('/companies/:key/areas/:areaName', async (req, res, next) => {
-    try {
-      res.json(await repository.deleteArea(req.params.key, req.params.areaName));
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post('/companies/:key/areas/:areaName/tasks', async (req, res, next) => {
-    try {
-      res.json(await repository.addTask(req.params.key, req.params.areaName, req.body.name));
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.delete('/companies/:key/areas/:areaName/tasks/:taskName', async (req, res, next) => {
-    try {
-      res.json(await repository.deleteTask(req.params.key, req.params.areaName, req.params.taskName));
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  return router;
-}
-
-module.exports = { createCompanyRoutes };
-```
-
-Create `server/src/routes/adminRoutes.js`:
-
-```js
-const express = require('express');
-const { getSeedCompanies } = require('../seedData');
-
-function createAdminRoutes(repository) {
-  const router = express.Router();
-
-  router.post('/admin/seed', async (_req, res, next) => {
-    try {
-      const companies = getSeedCompanies();
-      await repository.seedCompanies(companies);
-      res.json({ ok: true, seeded: companies.map((company) => company.key) });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  return router;
-}
-
-module.exports = { createAdminRoutes };
-```
-
-- [ ] **Step 4: Wire routes into app and server**
-
-Update `server/src/app.js`:
-
-```js
-const express = require('express');
-const path = require('node:path');
-const { createCompanyRoutes } = require('./routes/companyRoutes');
-const { createAdminRoutes } = require('./routes/adminRoutes');
-
-function createApp(options = {}) {
-  const app = express();
-  const staticRoot = options.staticRoot || path.resolve(__dirname, '..', '..');
-  const repository = options.repository;
-
-  app.use(express.json());
-
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', database: 'dasaochupaiban' });
-  });
-
-  if (repository) {
-    app.use('/api', createCompanyRoutes(repository));
-    app.use('/api', createAdminRoutes(repository));
+    });
+    const latest = await recordCollection.findOne({ systemKey: key }, { sort: { version: -1 } });
+    const record = {
+      systemKey: key,
+      version: latest ? latest.version + 1 : 1,
+      rows: clone(rows),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await recordCollection.insertOne(record);
+    return clone(record);
   }
 
-  app.use(express.static(staticRoot));
+  async function getLatestRecord(key) {
+    const record = await recordCollection.findOne({ systemKey: key }, { sort: { version: -1 } });
+    return record ? clone(record) : null;
+  }
 
-  app.use((err, _req, res, _next) => {
-    const status = err.statusCode || 500;
-    res.status(status).json({
-      error: err.code || 'internal_error',
-      message: err.message || 'Internal server error'
-    });
-  });
-
-  return app;
+  return { getScheduleSystem, addEmployee, deleteEmployee, saveRecord, getLatestRecord };
 }
 
-module.exports = { createApp };
+module.exports = { createScheduleRepository };
 ```
 
-Update `server/src/server.js`:
+- [ ] **Step 4: Add schedule routing**
+
+In `lib/apiHandler.js`, dispatch `parts[0] === 'schedule-systems'`:
 
 ```js
-require('dotenv').config();
+const scheduleRepository = dependencies.scheduleRepository;
 
-const path = require('node:path');
-const { createApp } = require('./app');
-const { connectToDatabase } = require('./db');
-const { createCompanyRepository } = require('./repositories/companyRepository');
-
-async function main() {
-  const port = Number(process.env.PORT || 3000);
-  const { client, db } = await connectToDatabase(process.env.MONGODB_URI, 'dasaochupaiban');
-  const repository = createCompanyRepository(db.collection('companies'));
-  const app = createApp({
-    repository,
-    staticRoot: path.resolve(__dirname, '..', '..')
-  });
-
-  const server = app.listen(port, () => {
-    console.log(`Dasaochupaiban server listening on http://localhost:${port}`);
-  });
-
-  process.on('SIGINT', async () => {
-    server.close(async () => {
-      await client.close();
-      process.exit(0);
-    });
-  });
-}
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
-```
-
-- [ ] **Step 5: Add seed CLI**
-
-Create `server/scripts/seed.js`:
-
-```js
-require('dotenv').config();
-
-const { connectToDatabase } = require('../src/db');
-const { createCompanyRepository } = require('../src/repositories/companyRepository');
-const { getSeedCompanies } = require('../src/seedData');
-
-async function main() {
-  const { client, db } = await connectToDatabase(process.env.MONGODB_URI, 'dasaochupaiban');
-  try {
-    const repository = createCompanyRepository(db.collection('companies'));
-    const companies = getSeedCompanies();
-    await repository.seedCompanies(companies);
-    console.log(`Seeded companies: ${companies.map((company) => company.key).join(', ')}`);
-  } finally {
-    await client.close();
+if (parts[0] === 'schedule-systems' && scheduleRepository) {
+  if (req.method === 'GET' && parts.length === 2) {
+    const system = await scheduleRepository.getScheduleSystem(parts[1]);
+    if (!system) {
+      sendJson(res, 404, { error: 'schedule_system_not_found', message: `Schedule system ${parts[1]} was not found` });
+      return;
+    }
+    sendJson(res, 200, system);
+    return;
+  }
+  if (req.method === 'POST' && parts.length === 3 && parts[2] === 'employees') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await scheduleRepository.addEmployee(parts[1], body.name));
+    return;
+  }
+  if (req.method === 'DELETE' && parts.length === 4 && parts[2] === 'employees') {
+    sendJson(res, 200, await scheduleRepository.deleteEmployee(parts[1], parts[3]));
+    return;
+  }
+  if (req.method === 'GET' && parts.length === 4 && parts[2] === 'records' && parts[3] === 'latest') {
+    sendJson(res, 200, await scheduleRepository.getLatestRecord(parts[1]));
+    return;
+  }
+  if (req.method === 'POST' && parts.length === 3 && parts[2] === 'records') {
+    const body = await readJsonBody(req);
+    sendJson(res, 200, await scheduleRepository.saveRecord(parts[1], body.rows));
+    return;
   }
 }
-
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
 ```
 
-- [ ] **Step 6: Run API tests to verify they pass**
+- [ ] **Step 5: Run schedule API tests**
 
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "company API|GET /api/health"
+npm test -- --test-name-pattern "schedule APIs"
 ```
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add server/src/routes/companyRoutes.js server/src/routes/adminRoutes.js server/scripts/seed.js server/src/app.js server/src/server.js server/test/companyApi.test.js
-git commit -m "feat: add cleaning roster api routes"
+git add lib/repositories/scheduleRepository.js lib/apiHandler.js test/scheduleApi.test.js
+git commit -m "feat: add operations schedule apis"
 ```
 
 ---
 
-### Task 5: Unified Cleaning Frontend Data Client
+### Task 5: Admin Seed API
+
+**Files:**
+- Modify: `lib/apiHandler.js`
+- Test: `test/adminSeedApi.test.js`
+
+**Interfaces:**
+- Consumes seed data from `lib/seedData.js`.
+- Produces: `POST /api/admin/seed`.
+
+- [ ] **Step 1: Write failing admin seed API test**
+
+Create `test/adminSeedApi.test.js`:
+
+```js
+const assert = require('node:assert/strict');
+const test = require('node:test');
+const { handleApiRequest } = require('../lib/apiHandler');
+
+function response() {
+  return {
+    statusCode: 0,
+    headers: {},
+    body: '',
+    setHeader(name, value) { this.headers[name] = value; },
+    end(value) { this.body = value; }
+  };
+}
+
+test('POST /api/admin/seed seeds cleaning and schedule data', async () => {
+  const seeded = { companies: [], scheduleSystems: [] };
+  const dependencies = {
+    seedRepositories: {
+      async seedAll({ companies, scheduleSystem }) {
+        seeded.companies = companies.map((company) => company.key);
+        seeded.scheduleSystems = [scheduleSystem.key];
+      }
+    }
+  };
+
+  const res = response();
+  await handleApiRequest({ method: 'POST', url: '/api/admin/seed' }, res, dependencies);
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body), { ok: true, companies: ['wuhan', 'yichang'], scheduleSystems: ['operations'] });
+  assert.deepEqual(seeded.companies, ['wuhan', 'yichang']);
+  assert.deepEqual(seeded.scheduleSystems, ['operations']);
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run:
+
+```bash
+npm test -- --test-name-pattern "POST /api/admin/seed"
+```
+
+Expected: FAIL because admin route is not handled.
+
+- [ ] **Step 3: Add seed handler**
+
+In `lib/apiHandler.js`, add:
+
+```js
+const { getSeedCompanies, getSeedScheduleSystem } = require('./seedData');
+```
+
+Inside `handleApiRequest`, before 404:
+
+```js
+if (req.method === 'POST' && parts.length === 2 && parts[0] === 'admin' && parts[1] === 'seed') {
+  const companies = getSeedCompanies();
+  const scheduleSystem = getSeedScheduleSystem();
+  await dependencies.seedRepositories.seedAll({ companies, scheduleSystem });
+  sendJson(res, 200, { ok: true, companies: companies.map((company) => company.key), scheduleSystems: [scheduleSystem.key] });
+  return;
+}
+```
+
+Update `api/index.js` to pass `seedRepositories`:
+
+```js
+seedRepositories: {
+  async seedAll({ companies, scheduleSystem }) {
+    const now = new Date().toISOString();
+    for (const company of companies) {
+      await db.collection('companies').replaceOne({ key: company.key }, { ...company, updatedAt: now }, { upsert: true });
+    }
+    await db.collection('scheduleSystems').replaceOne({ key: scheduleSystem.key }, { ...scheduleSystem, updatedAt: now }, { upsert: true });
+  }
+}
+```
+
+- [ ] **Step 4: Run admin seed test**
+
+Run:
+
+```bash
+npm test -- --test-name-pattern "POST /api/admin/seed"
+```
+
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add lib/apiHandler.js api/index.js test/adminSeedApi.test.js
+git commit -m "feat: add admin seed api"
+```
+
+---
+
+### Task 6: Unified Cleaning Page and Homepage Routing
 
 **Files:**
 - Create: `cleaning.html`
-- Create: `server/test/staticPage.test.js`
+- Modify: `index.html`
+- Test: `test/staticPages.test.js`
 
 **Interfaces:**
-- Consumes API endpoints from Task 4.
-- Produces browser functions:
-  - `loadCompanies(): Promise<void>`
-  - `loadCompany(key: string): Promise<void>`
-  - `apiRequest(path: string, options?: RequestInit): Promise<any>`
-  - `getTaskKeys(): string[]`
-  - `taskKey(areaName: string, taskName: string): string`
-  - `findFixedAssignment(areaName: string, taskName: string): FixedAssignment | undefined`
+- Consumes cleaning company APIs from Task 3.
+- Produces:
+  - `cleaning.html?company=wuhan`
+  - `cleaning.html?company=yichang`
+  - homepage links to both company-specific URLs.
 
-- [ ] **Step 1: Write failing static page test**
+- [ ] **Step 1: Write failing static page tests**
 
-Create `server/test/staticPage.test.js`:
+Create `test/staticPages.test.js`:
 
 ```js
 const assert = require('node:assert/strict');
@@ -1114,14 +1167,22 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 
-test('cleaning.html contains unified API-driven page hooks', () => {
-  const htmlPath = path.resolve(__dirname, '..', '..', 'cleaning.html');
-  const html = fs.readFileSync(htmlPath, 'utf8');
+function readRoot(file) {
+  return fs.readFileSync(path.resolve(__dirname, '..', file), 'utf8');
+}
 
-  assert.match(html, /id="company-switcher"/);
-  assert.match(html, /async function loadCompanies/);
-  assert.match(html, /async function loadCompany/);
+test('index.html keeps three entries and links cleaning cards to unified page', () => {
+  const html = readRoot('index.html');
+  assert.match(html, /排班表系统\.html/);
+  assert.match(html, /cleaning\.html\?company=yichang/);
+  assert.match(html, /cleaning\.html\?company=wuhan/);
+});
+
+test('cleaning.html is API backed and selected by company query', () => {
+  const html = readRoot('cleaning.html');
+  assert.match(html, /new URLSearchParams\(location\.search\)/);
   assert.match(html, /\/api\/companies/);
+  assert.match(html, /async function loadCompany/);
   assert.doesNotMatch(html, /const ALL_EMPLOYEES = \[/);
   assert.doesNotMatch(html, /const DEFAULT_AREAS = \{/);
 });
@@ -1132,898 +1193,437 @@ test('cleaning.html contains unified API-driven page hooks', () => {
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "cleaning.html contains"
+npm test -- --test-name-pattern "index.html keeps|cleaning.html is API"
 ```
 
-Expected: FAIL because `cleaning.html` does not exist.
+Expected: FAIL because `cleaning.html` does not exist and index links still point to old cleaning pages.
 
-- [ ] **Step 3: Create initial unified page shell**
+- [ ] **Step 3: Create API-backed `cleaning.html`**
 
-Create `cleaning.html` with the existing visual style adapted from the old cleaning pages, and include these required elements:
+Create `cleaning.html` with:
+
+- company query parsing:
+
+```js
+const requestedCompany = new URLSearchParams(location.search).get('company') || 'wuhan';
+```
+
+- API loader:
+
+```js
+async function loadCompany(key) {
+  currentCompany = await apiRequest(`/api/companies/${encodeURIComponent(key)}`);
+  loadLocalState();
+  renderAll();
+}
+```
+
+- mutation calls:
+
+```js
+await apiRequest(`/api/companies/${currentCompany.key}/employees`, {
+  method: 'POST',
+  body: JSON.stringify({ name })
+});
+```
+
+Reuse the existing cleaning page visual language and browser-side assignment/export logic from the old pages. Do not hardcode `ALL_EMPLOYEES` or `DEFAULT_AREAS`.
+
+- [ ] **Step 4: Update homepage links**
+
+Modify the Yichang card button in `index.html`:
 
 ```html
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>呈尚策划 · 大扫除安排表</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --ink: #1f2933;
-      --muted: #667085;
-      --line: #d8ded2;
-      --paper: #fffdf8;
-      --leaf: #3d5a3e;
-      --leaf-2: #5c7c5d;
-      --amber: #e8a645;
-      --danger: #b45b3c;
-      --cream: #f7f1e3;
-      --shadow: 0 16px 40px rgba(61, 90, 62, 0.12);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Noto Sans SC", "Microsoft YaHei", Arial, sans-serif;
-      color: var(--ink);
-      background: #f4f6ef;
-    }
-    .app { max-width: 1440px; margin: 0 auto; padding: 24px; }
-    .topbar { display: flex; gap: 16px; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .title h1 { margin: 0; font-size: 28px; }
-    .title p { margin: 6px 0 0; color: var(--muted); }
-    .switcher { display: flex; gap: 8px; padding: 4px; background: #ffffff; border: 1px solid var(--line); border-radius: 8px; }
-    .switcher button, .btn {
-      border: 1px solid var(--line);
-      background: #ffffff;
-      color: var(--ink);
-      border-radius: 6px;
-      padding: 9px 12px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .switcher button.active, .btn.primary { background: var(--leaf); color: #ffffff; border-color: var(--leaf); }
-    .btn.danger { background: var(--danger); color: #ffffff; border-color: var(--danger); }
-    .layout { display: grid; grid-template-columns: 320px 1fr; gap: 18px; align-items: start; }
-    .panel {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      padding: 16px;
-    }
-    .panel h2 { margin: 0 0 12px; font-size: 18px; }
-    .form-row { display: flex; gap: 8px; margin-bottom: 12px; }
-    .form-row input {
-      flex: 1;
-      min-width: 0;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 9px 10px;
-    }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 8px 10px;
-      background: #ffffff;
-      cursor: pointer;
-      user-select: none;
-    }
-    .chip.fixed { background: #fff3d5; }
-    .chip.rest { opacity: .55; }
-    .chip button {
-      border: 0;
-      background: transparent;
-      color: var(--danger);
-      cursor: pointer;
-      font-weight: 700;
-    }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .area { margin-bottom: 16px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #ffffff; }
-    .area-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 12px; background: var(--cream); }
-    .tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 12px; }
-    .task {
-      min-height: 94px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
-      background: #fbfcf7;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .assigned { color: var(--leaf); font-weight: 700; }
-    .task-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .status { margin: 10px 0; color: var(--muted); min-height: 20px; }
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-      .topbar { align-items: stretch; flex-direction: column; }
-    }
-  </style>
-</head>
-<body>
-  <main class="app">
-    <section class="topbar">
-      <div class="title">
-        <h1 id="page-title">大扫除安排表</h1>
-        <p id="page-subtitle">正在加载公司数据</p>
-      </div>
-      <div id="company-switcher" class="switcher"></div>
-    </section>
-
-    <div class="layout">
-      <aside class="panel">
-        <h2>人员名单</h2>
-        <form id="employee-form" class="form-row">
-          <input id="employee-name" autocomplete="off" placeholder="输入员工姓名" />
-          <button class="btn primary" type="submit">新增</button>
-        </form>
-        <div id="staff-grid" class="chips"></div>
-
-        <h2 style="margin-top:18px;">休息人员</h2>
-        <div id="rest-grid" class="chips"></div>
-
-        <h2 style="margin-top:18px;">未分配人员</h2>
-        <div id="unassigned-grid" class="chips"></div>
-      </aside>
-
-      <section class="panel">
-        <div class="toolbar">
-          <button class="btn primary" onclick="randomAssign()">随机分配</button>
-          <button class="btn" onclick="clearAll()">清空分配</button>
-          <button class="btn" onclick="exportExcel()">导出 Excel</button>
-        </div>
-
-        <form id="area-form" class="form-row">
-          <input id="area-name" autocomplete="off" placeholder="新增区域名称" />
-          <input id="area-task-name" autocomplete="off" placeholder="第一个清洁内容" />
-          <button class="btn primary" type="submit">新增区域</button>
-        </form>
-
-        <div id="status" class="status"></div>
-        <div id="task-board"></div>
-      </section>
-    </div>
-  </main>
-
-  <script>
-    let companies = [];
-    let currentCompany = null;
-    let restSet = new Set();
-    let assignments = {};
-
-    async function apiRequest(path, options = {}) {
-      const response = await fetch(path, {
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-        ...options
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.message || data.error || '请求失败');
-      }
-      return data;
-    }
-
-    async function loadCompanies() {
-      companies = await apiRequest('/api/companies');
-      renderCompanySwitcher();
-      const firstKey = new URLSearchParams(location.search).get('company') || (companies[0] && companies[0].key);
-      if (firstKey) await loadCompany(firstKey);
-    }
-
-    async function loadCompany(key) {
-      currentCompany = await apiRequest(`/api/companies/${encodeURIComponent(key)}`);
-      restSet = new Set();
-      assignments = {};
-      loadLocalState();
-      renderAll();
-    }
-
-    function renderCompanySwitcher() {
-      const switcher = document.getElementById('company-switcher');
-      switcher.innerHTML = companies.map((company) => (
-        `<button type="button" data-key="${company.key}">${company.name}</button>`
-      )).join('');
-      switcher.querySelectorAll('button').forEach((button) => {
-        button.addEventListener('click', () => loadCompany(button.dataset.key));
-      });
-    }
-
-    function renderAll() {
-      document.getElementById('page-title').textContent = `${currentCompany.name}大扫除安排表`;
-      document.getElementById('page-subtitle').textContent = `${currentCompany.subtitle} · ${currentCompany.employees.length} 名员工 · ${getTaskKeys().length} 个清洁任务`;
-      document.querySelectorAll('#company-switcher button').forEach((button) => {
-        button.classList.toggle('active', button.dataset.key === currentCompany.key);
-      });
-      renderEmployees();
-      renderRest();
-      renderTasks();
-      renderUnassigned();
-      setStatus('');
-    }
-
-    function isFixedEmployee(employeeName) {
-      return currentCompany.fixedAssignments.some((item) => item.employeeName === employeeName);
-    }
-
-    function findFixedAssignment(areaName, taskName) {
-      return currentCompany.fixedAssignments.find((item) => item.areaName === areaName && item.taskName === taskName);
-    }
-
-    function taskKey(areaName, taskName) {
-      return `${areaName}::${taskName}`;
-    }
-
-    function getTaskKeys() {
-      return currentCompany.areas.flatMap((area) => area.tasks.map((task) => taskKey(area.name, task.name)));
-    }
-
-    function renderEmployees() {
-      const grid = document.getElementById('staff-grid');
-      grid.innerHTML = '';
-      currentCompany.employees.forEach((employeeName) => {
-        const chip = document.createElement('span');
-        chip.className = `chip${isFixedEmployee(employeeName) ? ' fixed' : ''}${restSet.has(employeeName) ? ' rest' : ''}`;
-        chip.textContent = employeeName;
-        chip.addEventListener('click', () => toggleRest(employeeName));
-        const deleteButton = document.createElement('button');
-        deleteButton.type = 'button';
-        deleteButton.textContent = 'x';
-        deleteButton.title = '删除人员';
-        deleteButton.addEventListener('click', (event) => {
-          event.stopPropagation();
-          deleteEmployee(employeeName);
-        });
-        chip.appendChild(deleteButton);
-        grid.appendChild(chip);
-      });
-    }
-
-    function renderRest() {
-      const grid = document.getElementById('rest-grid');
-      grid.innerHTML = [...restSet].map((name) => `<span class="chip rest">${name}</span>`).join('') || '<span class="status">暂无休息人员</span>';
-    }
-
-    function renderTasks() {
-      const board = document.getElementById('task-board');
-      board.innerHTML = '';
-      currentCompany.areas.forEach((area) => {
-        const section = document.createElement('section');
-        section.className = 'area';
-        section.innerHTML = `
-          <div class="area-head">
-            <strong>${escapeHtml(area.name)}</strong>
-            <div class="task-actions">
-              <button class="btn" type="button" data-action="add-task">新增任务</button>
-              <button class="btn danger" type="button" data-action="delete-area">删除区域</button>
-            </div>
-          </div>
-          <div class="tasks"></div>
-        `;
-        section.querySelector('[data-action="add-task"]').addEventListener('click', () => addTask(area.name));
-        section.querySelector('[data-action="delete-area"]').addEventListener('click', () => deleteArea(area.name));
-
-        const tasks = section.querySelector('.tasks');
-        area.tasks.forEach((task) => {
-          const key = taskKey(area.name, task.name);
-          const fixed = findFixedAssignment(area.name, task.name);
-          if (fixed) assignments[key] = fixed.employeeName;
-          const card = document.createElement('article');
-          card.className = 'task';
-          card.innerHTML = `
-            <div>
-              <strong>${escapeHtml(task.name)}</strong>
-              <div class="assigned">${assignments[key] ? `✓ ${escapeHtml(assignments[key])}` : '未分配'}</div>
-            </div>
-            <div class="task-actions">
-              <button class="btn" type="button" data-action="assign">分配</button>
-              <button class="btn" type="button" data-action="clear">取消</button>
-              <button class="btn danger" type="button" data-action="delete-task">删除任务</button>
-            </div>
-          `;
-          card.querySelector('[data-action="assign"]').addEventListener('click', () => assignTask(key));
-          card.querySelector('[data-action="clear"]').addEventListener('click', () => clearAssignment(key));
-          card.querySelector('[data-action="delete-task"]').addEventListener('click', () => deleteTask(area.name, task.name));
-          tasks.appendChild(card);
-        });
-        board.appendChild(section);
-      });
-      saveLocalState();
-    }
-
-    function renderUnassigned() {
-      const assigned = new Set(Object.values(assignments));
-      const names = currentCompany.employees.filter((name) => !restSet.has(name) && !assigned.has(name));
-      document.getElementById('unassigned-grid').innerHTML = names.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('') || '<span class="status">暂无未分配人员</span>';
-    }
-
-    function toggleRest(employeeName) {
-      if (isFixedEmployee(employeeName)) {
-        setStatus('固定负责人不可设为休息');
-        return;
-      }
-      if (restSet.has(employeeName)) restSet.delete(employeeName);
-      else restSet.add(employeeName);
-      Object.keys(assignments).forEach((key) => {
-        if (assignments[key] === employeeName) delete assignments[key];
-      });
-      saveLocalState();
-      renderAll();
-    }
-
-    function assignTask(key) {
-      const fixed = currentCompany.fixedAssignments.find((item) => taskKey(item.areaName, item.taskName) === key);
-      if (fixed) {
-        setStatus('固定任务不可更改');
-        return;
-      }
-      const used = new Set(Object.values(assignments));
-      const available = currentCompany.employees.find((name) => !restSet.has(name) && !isFixedEmployee(name) && !used.has(name));
-      if (!available) {
-        setStatus('暂无可分配人员');
-        return;
-      }
-      assignments[key] = available;
-      saveLocalState();
-      renderAll();
-    }
-
-    function clearAssignment(key) {
-      const fixed = currentCompany.fixedAssignments.find((item) => taskKey(item.areaName, item.taskName) === key);
-      if (fixed) {
-        setStatus('固定任务不可取消');
-        return;
-      }
-      delete assignments[key];
-      saveLocalState();
-      renderAll();
-    }
-
-    function randomAssign() {
-      currentCompany.fixedAssignments.forEach((item) => {
-        assignments[taskKey(item.areaName, item.taskName)] = item.employeeName;
-      });
-      const used = new Set(Object.values(assignments));
-      const employees = currentCompany.employees.filter((name) => !restSet.has(name) && !used.has(name) && !isFixedEmployee(name));
-      const freeTasks = getTaskKeys().filter((key) => !assignments[key]);
-      employees.sort(() => Math.random() - 0.5);
-      freeTasks.forEach((key, index) => {
-        if (employees[index]) assignments[key] = employees[index];
-      });
-      saveLocalState();
-      renderAll();
-    }
-
-    function clearAll() {
-      assignments = {};
-      currentCompany.fixedAssignments.forEach((item) => {
-        assignments[taskKey(item.areaName, item.taskName)] = item.employeeName;
-      });
-      saveLocalState();
-      renderAll();
-    }
-
-    async function addEmployee(name) {
-      const value = name.trim();
-      if (!value) return;
-      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/employees`, {
-        method: 'POST',
-        body: JSON.stringify({ name: value })
-      });
-      saveLocalState();
-      renderAll();
-    }
-
-    async function deleteEmployee(employeeName) {
-      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/employees/${encodeURIComponent(employeeName)}`, {
-        method: 'DELETE'
-      });
-      restSet.delete(employeeName);
-      Object.keys(assignments).forEach((key) => {
-        if (assignments[key] === employeeName) delete assignments[key];
-      });
-      saveLocalState();
-      renderAll();
-    }
-
-    async function addArea(name, firstTaskName) {
-      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas`, {
-        method: 'POST',
-        body: JSON.stringify({ name: name.trim(), firstTaskName: firstTaskName.trim() })
-      });
-      renderAll();
-    }
-
-    async function deleteArea(areaName) {
-      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(areaName)}`, {
-        method: 'DELETE'
-      });
-      saveLocalState();
-      renderAll();
-    }
-
-    async function addTask(areaName) {
-      const name = prompt('请输入清洁内容');
-      if (!name || !name.trim()) return;
-      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(areaName)}/tasks`, {
-        method: 'POST',
-        body: JSON.stringify({ name: name.trim() })
-      });
-      renderAll();
-    }
-
-    async function deleteTask(areaName, taskName) {
-      currentCompany = await apiRequest(`/api/companies/${currentCompany.key}/areas/${encodeURIComponent(areaName)}/tasks/${encodeURIComponent(taskName)}`, {
-        method: 'DELETE'
-      });
-      delete assignments[taskKey(areaName, taskName)];
-      saveLocalState();
-      renderAll();
-    }
-
-    function loadLocalState() {
-      const raw = localStorage.getItem(currentCompany.storageKey);
-      if (!raw) {
-        clearAll();
-        return;
-      }
-      try {
-        const parsed = JSON.parse(raw);
-        assignments = parsed.assignments || {};
-        restSet = new Set(parsed.restEmployees || []);
-      } catch {
-        assignments = {};
-        restSet = new Set();
-      }
-      currentCompany.fixedAssignments.forEach((item) => {
-        assignments[taskKey(item.areaName, item.taskName)] = item.employeeName;
-      });
-    }
-
-    function saveLocalState() {
-      if (!currentCompany) return;
-      localStorage.setItem(currentCompany.storageKey, JSON.stringify({
-        assignments,
-        restEmployees: [...restSet]
-      }));
-    }
-
-    function exportExcel() {
-      const rows = [['区域', '清洁内容', '负责人']];
-      currentCompany.areas.forEach((area) => {
-        area.tasks.forEach((task) => {
-          rows.push([area.name, task.name, assignments[taskKey(area.name, task.name)] || '']);
-        });
-      });
-      const ws = XLSX.utils.aoa_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, '大扫除安排');
-      XLSX.writeFile(wb, `呈尚策划${currentCompany.name}大扫除安排表.xlsx`);
-    }
-
-    function setStatus(message) {
-      document.getElementById('status').textContent = message;
-    }
-
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, (char) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[char]));
-    }
-
-    document.getElementById('employee-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const input = document.getElementById('employee-name');
-      try {
-        await addEmployee(input.value);
-        input.value = '';
-      } catch (error) {
-        setStatus(error.message);
-      }
-    });
-
-    document.getElementById('area-form').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const areaInput = document.getElementById('area-name');
-      const taskInput = document.getElementById('area-task-name');
-      try {
-        await addArea(areaInput.value, taskInput.value);
-        areaInput.value = '';
-        taskInput.value = '';
-      } catch (error) {
-        setStatus(error.message);
-      }
-    });
-
-    loadCompanies().catch((error) => setStatus(error.message));
-  </script>
-</body>
-</html>
+<a href="cleaning.html?company=yichang" class="card-button">
 ```
 
-- [ ] **Step 4: Run static page test to verify it passes**
+Modify the Wuhan card button in `index.html`:
+
+```html
+<a href="cleaning.html?company=wuhan" class="card-button">
+```
+
+Keep the operations schedule card linked to:
+
+```html
+<a href="排班表系统.html" class="card-button">
+```
+
+- [ ] **Step 5: Run static page tests**
 
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "cleaning.html contains"
+npm test -- --test-name-pattern "index.html keeps|cleaning.html is API"
 ```
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add cleaning.html server/test/staticPage.test.js
-git commit -m "feat: add unified cleaning page"
+git add cleaning.html index.html test/staticPages.test.js
+git commit -m "feat: add vercel cleaning page"
 ```
 
 ---
 
-### Task 6: Frontend API Error Handling and State Compatibility
+### Task 7: API-Backed Operations Schedule Page
 
 **Files:**
-- Modify: `cleaning.html`
-- Test: `server/test/staticPage.test.js`
+- Modify: `排班表系统.html`
+- Modify: `test/staticPages.test.js`
 
 **Interfaces:**
-- Consumes: `cleaning.html` functions from Task 5.
-- Produces: robust user-visible status handling and migration support for existing local storage shapes.
+- Consumes operations APIs from Task 4.
+- Produces:
+  - `loadScheduleSystem(): Promise<void>`
+  - `loadLatestSchedule(): Promise<void>`
+  - `saveSchedule(): Promise<void>` that posts to `/api/schedule-systems/operations/records`
 
-- [ ] **Step 1: Extend static page test for error and local storage hooks**
+- [ ] **Step 1: Add failing static test for schedule page API hooks**
 
-Modify `server/test/staticPage.test.js`:
+Append to `test/staticPages.test.js`:
 
 ```js
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const path = require('node:path');
-const test = require('node:test');
-
-function readCleaningHtml() {
-  return fs.readFileSync(path.resolve(__dirname, '..', '..', 'cleaning.html'), 'utf8');
-}
-
-test('cleaning.html contains unified API-driven page hooks', () => {
-  const html = readCleaningHtml();
-
-  assert.match(html, /id="company-switcher"/);
-  assert.match(html, /async function loadCompanies/);
-  assert.match(html, /async function loadCompany/);
-  assert.match(html, /\/api\/companies/);
-  assert.doesNotMatch(html, /const ALL_EMPLOYEES = \[/);
-  assert.doesNotMatch(html, /const DEFAULT_AREAS = \{/);
-});
-
-test('cleaning.html handles API errors and legacy localStorage keys', () => {
-  const html = readCleaningHtml();
-
-  assert.match(html, /function setStatus/);
-  assert.match(html, /parsed\.restEmployees/);
-  assert.match(html, /parsed\.rest/);
-  assert.match(html, /parsed\.assignments/);
-  assert.match(html, /status\.textContent/);
+test('operations schedule page loads config and saves records through API', () => {
+  const html = readRoot('排班表系统.html');
+  assert.match(html, /async function loadScheduleSystem/);
+  assert.match(html, /async function loadLatestSchedule/);
+  assert.match(html, /\/api\/schedule-systems\/operations/);
+  assert.match(html, /\/records\/latest/);
+  assert.doesNotMatch(html, /const employees = \[/);
 });
 ```
 
-- [ ] **Step 2: Run test to verify new assertions fail if compatibility is missing**
+- [ ] **Step 2: Run test to verify it fails**
 
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "legacy localStorage"
+npm test -- --test-name-pattern "operations schedule page"
 ```
 
-Expected: FAIL until `loadLocalState()` supports both `restEmployees` and old `rest` if the Task 5 implementation omitted old-key support.
+Expected: FAIL because `排班表系统.html` still hardcodes `const employees`.
 
-- [ ] **Step 3: Update `cleaning.html` local storage loader**
+- [ ] **Step 3: Replace hardcoded schedule data with runtime state**
 
-In `cleaning.html`, replace `loadLocalState()` with:
+In `排班表系统.html`, replace:
 
 ```js
-function loadLocalState() {
-  const raw = localStorage.getItem(currentCompany.storageKey);
-  assignments = {};
-  restSet = new Set();
+const employees = ['杨有淇', '陈吉舒', '王涛', '王清月', '袁丽妮', '陈冉'];
+const dayNames = ['星期一','星期二','星期三','星期四','星期五','星期六','星期天'];
+```
 
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      assignments = parsed.assignments || {};
-      restSet = new Set(parsed.restEmployees || parsed.rest || []);
-    } catch {
-      assignments = {};
-      restSet = new Set();
-    }
-  }
+with:
 
-  currentCompany.fixedAssignments.forEach((item) => {
-    assignments[taskKey(item.areaName, item.taskName)] = item.employeeName;
+```js
+let employees = [];
+let dayNames = [];
+let scheduleRules = { sundayWorkCount: 2, twoDayComplement: true };
+```
+
+- [ ] **Step 4: Add API request helpers**
+
+Add before `initScheduleTable()`:
+
+```js
+async function apiRequest(path, options = {}) {
+  const response = await fetch(path, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.error || '请求失败');
+  return data;
+}
+
+async function loadScheduleSystem() {
+  const system = await apiRequest('/api/schedule-systems/operations');
+  employees = system.employees || [];
+  dayNames = system.dayNames || ['星期一','星期二','星期三','星期四','星期五','星期六','星期天'];
+  scheduleRules = system.rules || scheduleRules;
+  applyDefaultSelectedDays(system.defaultSelectedDayIndexes || [5, 6]);
+}
+```
+
+- [ ] **Step 5: Add default day selector sync**
+
+Add:
+
+```js
+function applyDefaultSelectedDays(indexes) {
+  const selected = new Set(indexes);
+  document.querySelectorAll('.day-pill input').forEach((input) => {
+    input.checked = selected.has(Number(input.value));
+    input.closest('.day-pill').classList.toggle('selected', input.checked);
   });
 }
 ```
 
-Ensure each async mutation has a `try/catch` at the event-handler boundary and calls `setStatus(error.message)`.
+- [ ] **Step 6: Update save and latest-load behavior**
 
-- [ ] **Step 4: Run static page tests**
-
-Run:
-
-```bash
-cd server
-npm test -- --test-name-pattern "cleaning.html"
-```
-
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add cleaning.html server/test/staticPage.test.js
-git commit -m "fix: handle cleaning page api errors"
-```
-
----
-
-### Task 7: Homepage Link
-
-**Files:**
-- Modify: `index.html`
-- Test: `server/test/staticPage.test.js`
-
-**Interfaces:**
-- Consumes: `cleaning.html` from Task 5.
-- Produces: homepage link to the unified page while retaining old page links.
-
-- [ ] **Step 1: Add failing homepage link test**
-
-Append to `server/test/staticPage.test.js`:
+Replace `saveSchedule()` with:
 
 ```js
-test('index.html links to unified cleaning page', () => {
-  const html = fs.readFileSync(path.resolve(__dirname, '..', '..', 'index.html'), 'utf8');
+async function saveSchedule() {
+  const rows = [];
+  document.querySelectorAll('#scheduleBody tr').forEach(row => {
+    const name = row.querySelector('.emp-name').textContent;
+    const schedule = Array.from(row.children).slice(1).map(td => {
+      const sc = td.querySelector('.schedule-cell');
+      if (sc.classList.contains('work-assigned')) return 'work';
+      if (sc.classList.contains('rest-assigned')) return 'rest';
+      return '';
+    });
+    rows.push({ name, schedule });
+  });
+  await apiRequest('/api/schedule-systems/operations/records', {
+    method: 'POST',
+    body: JSON.stringify({ rows })
+  });
+  localStorage.setItem('schedule_v2', JSON.stringify(rows));
+  toast('已保存到云数据库 ✓');
+}
+```
 
-  assert.match(html, /cleaning\.html/);
-  assert.match(html, /统一大扫除安排表/);
+Add:
+
+```js
+async function loadLatestSchedule() {
+  const record = await apiRequest('/api/schedule-systems/operations/records/latest');
+  const rows = record && record.rows ? record.rows : [];
+  const byName = new Map(rows.map((row) => [row.name, row.schedule]));
+  document.querySelectorAll('#scheduleBody tr').forEach(row => {
+    const name = row.querySelector('.emp-name').textContent;
+    const schedule = byName.get(name) || [];
+    Array.from(row.children).slice(1).forEach((td, index) => {
+      const status = schedule[index];
+      const cell = td.querySelector('.schedule-cell');
+      if (status === 'work' || status === 'rest') setScheduleStatus(cell, status);
+    });
+  });
+}
+```
+
+- [ ] **Step 7: Update boot flow**
+
+Replace the existing DOMContentLoaded body with:
+
+```js
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    await loadScheduleSystem();
+    initScheduleTable();
+    initDragAndDrop();
+    initDaySelector();
+    initContextMenu();
+    updateGenBtn();
+    await loadLatestSchedule();
+  } catch (error) {
+    toast(error.message || '排班数据加载失败');
+  }
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 8: Use API-provided Sunday rule**
+
+In `generateRegular()`, replace:
+
+```js
+if (d.name === '星期天') workCount = 2;
+```
+
+with:
+
+```js
+if (d.name === '星期天') workCount = scheduleRules.sundayWorkCount || 2;
+```
+
+- [ ] **Step 9: Run static test**
 
 Run:
 
 ```bash
-cd server
-npm test -- --test-name-pattern "index.html links"
-```
-
-Expected: FAIL because `index.html` does not link to `cleaning.html` yet.
-
-- [ ] **Step 3: Modify `index.html`**
-
-In `index.html`, add a prominent card or update the existing cleaning card button so there is a link:
-
-```html
-<a href="cleaning.html" class="card-button">
-  <i class="fas fa-broom"></i>
-  进入统一大扫除安排表
-</a>
-```
-
-Keep existing links to `销售部大扫除安排表.html` and `武汉公司大扫除安排表.html` available as fallback entries or secondary text links.
-
-- [ ] **Step 4: Run homepage link test**
-
-Run:
-
-```bash
-cd server
-npm test -- --test-name-pattern "index.html links"
+npm test -- --test-name-pattern "operations schedule page"
 ```
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
-git add index.html server/test/staticPage.test.js
-git commit -m "feat: link unified cleaning page"
+git add "排班表系统.html" test/staticPages.test.js
+git commit -m "feat: load operations schedule from api"
 ```
 
 ---
 
-### Task 8: Full Backend Test Run and Real MongoDB Seed Verification
+### Task 8: Local Vercel and MongoDB Verification
 
 **Files:**
-- No committed file changes unless prior tasks expose a bug.
-- Local only: `server/.env`
+- Local only: `.env`
 
 **Interfaces:**
-- Consumes: all previous backend and frontend work.
-- Produces: verified local backend, seeded cloud database, and manual smoke result.
+- Consumes all previous tasks.
+- Produces verified local Vercel app and seeded MongoDB data.
 
-- [ ] **Step 1: Create local env file from `数据库`**
+- [ ] **Step 1: Create local env**
 
-Read the local `数据库` file and create `server/.env` manually with the real connection string:
+Create `.env` from the local `数据库` file:
 
 ```text
 MONGODB_URI=<real MongoDB connection string from local 数据库 file>
-PORT=3000
 ```
 
-Do not add `server/.env` to Git.
+Do not commit `.env`.
 
-- [ ] **Step 2: Run all automated tests**
+- [ ] **Step 2: Run full tests**
 
 Run:
 
 ```bash
-cd server
 npm test
 ```
 
-Expected: all `node:test` tests pass with exit code 0.
+Expected: all tests pass.
 
-- [ ] **Step 3: Run seed command against cloud MongoDB**
+- [ ] **Step 3: Seed MongoDB**
 
 Run:
 
 ```bash
-cd server
 npm run seed
-```
-
-Expected output includes:
-
-```text
-Seeded companies: wuhan, yichang
-```
-
-- [ ] **Step 4: Start backend**
-
-Run:
-
-```bash
-cd server
-npm start
 ```
 
 Expected output:
 
 ```text
-Dasaochupaiban server listening on http://localhost:3000
+Seeded companies: wuhan, yichang
+Seeded schedule system: operations
 ```
 
-- [ ] **Step 5: Verify APIs manually**
+- [ ] **Step 4: Start Vercel dev**
 
-In a second terminal, run:
+Run:
+
+```bash
+npm run dev
+```
+
+Expected: Vercel dev server starts and serves a local URL, usually `http://localhost:3000`.
+
+- [ ] **Step 5: Verify APIs**
+
+Run in a second terminal:
 
 ```bash
 Invoke-RestMethod -Uri 'http://localhost:3000/api/health'
 Invoke-RestMethod -Uri 'http://localhost:3000/api/companies'
 Invoke-RestMethod -Uri 'http://localhost:3000/api/companies/wuhan'
-Invoke-RestMethod -Uri 'http://localhost:3000/api/companies/yichang'
+Invoke-RestMethod -Uri 'http://localhost:3000/api/schedule-systems/operations'
+Invoke-RestMethod -Uri 'http://localhost:3000/api/schedule-systems/operations/records/latest'
 ```
 
 Expected:
 
-- Health response has `status = ok`.
+- Health returns `status = ok`.
 - Companies include `wuhan` and `yichang`.
 - Wuhan employees include `张新业`.
-- Yichang fixed assignments include `吴思湘` and `徐晓辉`.
+- Operations employees include `杨有淇` and `陈冉`.
 
-- [ ] **Step 6: Verify unified page manually**
+- [ ] **Step 6: Verify homepage and pages**
 
 Open:
 
 ```text
-http://localhost:3000/cleaning.html
+http://localhost:3000/index.html
 ```
 
 Manual checks:
 
-- Wuhan loads by default.
-- Switching to Yichang updates title, employees, and task board.
-- Add a temporary employee named `测试员工`.
-- Refresh page and confirm `测试员工` persists.
-- Delete `测试员工`.
-- Add a temporary area `测试区域` with first task `测试任务`.
-- Refresh page and confirm it persists.
-- Delete `测试区域`.
-- Try deleting fixed employee `盛亚娥` in Wuhan and confirm the page shows an error.
-- Run random assignment and confirm assignments render.
-- Export Excel and confirm a file downloads.
+- The homepage still has three entries.
+- Operations entry opens `排班表系统.html`.
+- Yichang entry opens `cleaning.html?company=yichang`.
+- Wuhan entry opens `cleaning.html?company=wuhan`.
+- Operations page loads employees from API, generates schedule, saves to cloud, refreshes and restores latest saved record.
+- Wuhan cleaning page loads `张新业`.
+- Yichang cleaning page loads `吴思湘` and `徐晓辉` fixed assignments.
+- Temporary add/delete employee works in cleaning and operations pages.
+- Temporary add/delete cleaning area and task works.
+- Excel export still works.
 
-- [ ] **Step 7: Stop backend**
+- [ ] **Step 7: Stop Vercel dev**
 
-Stop the `npm start` process with `Ctrl+C`.
+Stop with `Ctrl+C`.
 
-- [ ] **Step 8: Commit any verification fixes only**
+- [ ] **Step 8: Commit verification fixes only**
 
-If manual verification required fixes:
+If verification required fixes:
 
 ```bash
 git add <fixed-files>
-git commit -m "fix: verify cloud cleaning workflow"
+git commit -m "fix: verify vercel scheduling workflow"
 ```
 
 If no fixes were required, do not create an empty commit.
 
 ---
 
-### Task 9: Final Repository Verification
+### Task 9: Vercel Deployment Checklist
 
 **Files:**
-- No source changes expected.
+- No source changes expected unless adding deployment notes.
 
 **Interfaces:**
-- Consumes: all implementation tasks.
-- Produces: final confidence before push/deployment.
+- Produces deploy-ready repository.
 
-- [ ] **Step 1: Check Git state**
-
-Run:
-
-```bash
-git status --short --branch
-```
-
-Expected:
-
-- Current branch is ahead by the implementation commits.
-- `server/.env` is not listed.
-- Existing unrelated untracked files may remain untracked and must not be added accidentally.
-
-- [ ] **Step 2: Run full automated tests**
+- [ ] **Step 1: Confirm no secrets**
 
 Run:
 
 ```bash
-cd server
-npm test
-```
-
-Expected: all tests pass.
-
-- [ ] **Step 3: Confirm no secret in tracked files**
-
-Run:
-
-```bash
-rg -n "mongodb://|mongodb\\+srv://|root:|MONGODB_URI=.*@" --glob "!server/.env" --glob "!数据库"
+rg -n "mongo(db://|db\\+srv://)|root:|MONGODB[_]URI=.*\\x40" --glob "!.env" --glob "!.env.local" --glob "!数据库" --glob "!docs/superpowers/**"
 ```
 
 Expected:
 
 - No real MongoDB URI appears in tracked source files.
-- `.env.example` may contain only placeholder values.
+- `.env.example` contains only placeholder values.
+
+- [ ] **Step 2: Confirm Vercel env var**
+
+In Vercel Project Settings, add:
+
+```text
+MONGODB_URI=<real MongoDB connection string>
+```
+
+Apply it to Production, Preview, and Development unless there is a reason to separate them.
+
+- [ ] **Step 3: Run final automated tests**
+
+Run:
+
+```bash
+npm test
+```
+
+Expected: all tests pass.
 
 - [ ] **Step 4: Review final diff**
 
 Run:
 
 ```bash
-git log --oneline -10
+git status --short --branch
 git diff origin/master...HEAD --stat
 ```
 
 Expected:
 
-- Commits correspond to the planned backend, seed, API, frontend, and homepage changes.
-- No unrelated files are included.
+- Planned source files only.
+- Existing unrelated untracked files are not included.
 
 - [ ] **Step 5: Push when requested**
 
@@ -2035,10 +1635,12 @@ git push origin master
 
 Expected: remote `master` updates successfully.
 
+Vercel should deploy from the connected Git repository after push, or deploy manually through the Vercel CLI if the project is not connected.
+
 ---
 
 ## Self-Review
 
-- Spec coverage: The plan covers backend creation, MongoDB connection, `dasaochupaiban` seeding, REST APIs, unified frontend, edit controls, homepage link, tests, and real cloud seed verification.
+- Spec coverage: The plan covers Vercel deployment, MongoDB connection, seed data for cleaning and operations schedule, APIs for both systems, unified cleaning page, operations schedule API integration, homepage routing, tests, and Vercel deployment checks.
 - Placeholder scan: No placeholder markers or unspecified implementation steps remain.
-- Type consistency: Repository method names match API route usage; frontend function names match static tests; seed company keys match the spec.
+- Type consistency: API paths match the spec; repository method names match handler usage; seed keys match frontend query and API keys.
